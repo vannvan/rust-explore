@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rust WebAssemblydemo</title>
+  </head>
+
+  <body>
+    <script>
+      //JS实现的斐波那契数列
+      function fnbin(x) {
+        if (x <= 1) {
+          return 1
+        } else {
+          return fnbin(x - 1) + fnbin(x - 2)
+        }
+      }
+      // 加载wasm文件函数
+      function loadWebAssembly(fileName) {
+        return fetch(fileName)
+          .then((response) => response.arrayBuffer())
+          .then((buffer) => WebAssembly.compile(buffer)) // 编译
+          .then((module) => {
+            return WebAssembly.instantiate(module)
+          }) //创建WebAssembly实例
+      }
+
+      //调用加载WebAssembly函数，注意wasm文件必须要本html文件在服务器同一目录，否则可能会出现404错误
+      loadWebAssembly('hellowasm.wasm').then((instance) => {
+        console.time('WebAssembly')
+        console.log(instance.exports.fbin(45))
+        console.timeLog('WebAssembly')
+        console.time('Javascript')
+        console.log(fnbin(45))
+        console.timeLog('Javascript')
+      })
+    </script>
+  </body>
+</html>
