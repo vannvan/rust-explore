@@ -9,6 +9,11 @@ struct User {
     email: String,
 }
 
+#[derive(Debug)]
+struct TrafficLight {
+    color: String,
+}
+
 // 派生 Debug trait，可以在下面打印这种结构
 #[derive(Debug)]
 struct Color(i32, i32, i32);
@@ -37,14 +42,31 @@ impl Rectangle {
     }
 }
 
+impl std::fmt::Display for TrafficLight {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Traffic light is {}", self.color)
+    }
+}
+
+impl TrafficLight {
+    pub fn new() -> Self {
+        Self {
+            color: "red".to_owned(),
+        }
+    }
+}
+
 fn main() {
     println!("Hello, world!");
+
     let plant = Asparagus {
         // hello: String::from("哈哈哈"),
         name: String::from("王五"),
     };
     println!("导入的 {:?}!", plant.name);
 
+    let light = TrafficLight::new();
+    println!("{}", light);
     let num = 3;
     if num > 5 {
         println!("条件成立")
