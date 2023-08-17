@@ -1,3 +1,15 @@
 {
-  "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  "editor.tokenColorCustomizations": {
+    "[Theme Name]": {
+      "textMateRules": [
+        {
+          "scope": "variable.other.rust",
+          "settings": {
+            "foreground": "#ffff00"
+          }
+        }
+      ]
+    }
+  }
 }
