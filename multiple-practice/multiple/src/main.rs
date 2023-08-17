@@ -1,6 +1,8 @@
 use crate::gargen::vegetables::Asparagus;
 
+pub mod dump;
 pub mod gargen;
+pub mod rect;
 
 //用户
 struct User {
@@ -18,6 +20,7 @@ struct TrafficLight {
 #[derive(Debug)]
 struct Color(i32, i32, i32);
 
+<<<<<<< HEAD:multiple-practice/src/main.rs
 // 矩形
 struct Rectangle {
     width: u32,
@@ -56,6 +59,8 @@ impl TrafficLight {
     }
 }
 
+=======
+>>>>>>> bb870c3 (update):multiple-practice/multiple/src/main.rs
 fn main() {
     println!("Hello, world!");
 
@@ -65,8 +70,13 @@ fn main() {
     };
     println!("导入的 {:?}!", plant.name);
 
+<<<<<<< HEAD:multiple-practice/src/main.rs
     let light = TrafficLight::new();
     println!("{}", light);
+=======
+    dump::main();
+
+>>>>>>> bb870c3 (update):multiple-practice/multiple/src/main.rs
     let num = 3;
     if num > 5 {
         println!("条件成立")
@@ -88,22 +98,17 @@ fn main() {
 
     println!("{}喜欢 {:?}", user1.name, black);
 
-    let rect1 = Rectangle {
+    let rect1 = rect::Rectangle {
         width: 40,
         height: 40,
     };
 
     println!(
-        "矩形宽度:{},矩形高度:{},矩形面积:{},矩形信息是否有效:{}",
+        "矩形宽度:{},矩形高度:{},矩形面积:{},矩形数据是否有效:{}",
         rect1.get_width(),
         rect1.get_height(),
         rect1.area(),
         rect1.valid()
     );
-    println!("矩形面积：{}", calc_area(&rect1))
-}
-
-// 计算矩形面积的方法
-fn calc_area(rect: &Rectangle) -> u32 {
-    rect.width * rect.height
+    println!("矩形面积：{}", rect::calc_area(&rect1))
 }

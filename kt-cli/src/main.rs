@@ -13,7 +13,7 @@ fn main() {
         .author("vannvan")
         .about("一个类似cat命令的rust命令行工具")
         .arg(
-              Arg::with_name("FILE")
+            Arg::with_name("FILE")
                 .help("File to print.")
                 .empty_values(false),
         )
