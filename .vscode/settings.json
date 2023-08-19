@@ -1,15 +1,22 @@
 {
   "editor.formatOnSave": true,
-  "editor.tokenColorCustomizations": {
-    "[Theme Name]": {
-      "textMateRules": [
-        {
-          "scope": "variable.other.rust",
-          "settings": {
-            "foreground": "#ffff00"
-          }
-        }
-      ]
+  "rust-analyzer.completion.postfix.enable": true,
+  "rust-analyzer.imports.prefix": "plain",
+  "rust-analyzer.server.extraEnv": {
+    "RUSTUP_TOOLCHAIN": "stable"
+  },
+  "editor.inlayHints.fontFamily": "Courier New",
+  "editor.inlayHints.fontSize": 11,
+
+  "workbench.colorCustomizations": {
+    // Name of the theme you are currently using
+    "[Default Dark+]": {
+      "editorInlayHint.foreground": "#868686f0",
+      "editorInlayHint.background": "#3d3d3d48",
+
+      // Overrides for specific kinds of inlay hints
+      "editorInlayHint.typeForeground": "#fdb6fdf0",
+      "editorInlayHint.parameterForeground": "#fdb6fdf0"
     }
   }
 }

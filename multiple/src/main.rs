@@ -2,6 +2,7 @@ use crate::gargen::vegetables::Asparagus;
 
 pub mod dump;
 pub mod gargen;
+pub mod generics;
 pub mod rect;
 
 //用户
@@ -11,7 +12,8 @@ struct User {
     email: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug)] //后面能友好打印
+#[allow(dead_code)] // 允许dead_code
 struct TrafficLight {
     color: String,
 }
@@ -20,63 +22,57 @@ struct TrafficLight {
 #[derive(Debug)]
 struct Color(i32, i32, i32);
 
-<<<<<<< HEAD:multiple-practice/src/main.rs
-// 矩形
-struct Rectangle {
-    width: u32,
-    height: u32,
-}
-
-// 可以理解为一个类实现
-impl Rectangle {
-    fn area(&self) -> u32 {
-        self.width * self.height
-    }
-
-    fn get_height(&self) -> u32 {
-        self.height
-    }
-    fn get_width(&self) -> u32 {
-        self.width
-    }
-
-    fn valid(&self) -> bool {
-        self.width > 0 && self.height > 0
-    }
-}
-
-impl std::fmt::Display for TrafficLight {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Traffic light is {}", self.color)
-    }
-}
-
-impl TrafficLight {
-    pub fn new() -> Self {
-        Self {
-            color: "red".to_owned(),
-        }
-    }
-}
-
-=======
->>>>>>> bb870c3 (update):multiple-practice/multiple/src/main.rs
 fn main() {
     println!("Hello, world!");
 
+    let a: u8 = 255;
+
+    let b = a.wrapping_add(20);
+
+    println!("{}", b); // 19
+
+    let penguin_data = "\
+   common name,length (cm)
+   Little penguin,33
+   Yellow-eyed penguin,65
+   Fiordland penguin,60
+   Invalid,data
+   ";
+
+    let records = penguin_data.lines();
+
+    for (i, record) in records.enumerate() {
+        if i == 0 || record.trim().len() == 0 {
+            continue;
+        }
+
+        let fields: Vec<_> = record.split(',').map(|field| field.trim()).collect();
+        // 只在debug模式下生效，当--release时就不会打印这里
+        if cfg!(debug_assertions) {
+            // 输出到标准错误输出
+            eprintln!("debug : {:?} -> {:?}", record, fields);
+        }
+
+        let name = fields[0];
+
+        if let Ok(length) = fields[1].parse::<f32>() {
+            // 输出到标准输出
+            println!("{}, {}cm", name, length);
+        }
+    }
+
+    // 导入结构体
     let plant = Asparagus {
         // hello: String::from("哈哈哈"),
         name: String::from("王五"),
     };
     println!("导入的 {:?}!", plant.name);
 
-<<<<<<< HEAD:multiple-practice/src/main.rs
-    let light = TrafficLight::new();
-    println!("{}", light);
-=======
+    // 外部模块
     dump::main();
 
->>>>>>> bb870c3 (update):multiple-practice/multiple/src/main.rs
+    // let _s = generics::SingleGen(1);
+
     let num = 3;
     if num > 5 {
         println!("条件成立")
