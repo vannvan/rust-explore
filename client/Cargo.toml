@@ -11,3 +11,4 @@ tokio = { version = "1", features = ["full"] }
 
 url = '2'
 select ='0.6'
+serde = { version = "1.0", features = ["derive"] }
