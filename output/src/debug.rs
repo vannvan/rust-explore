@@ -1,4 +1,5 @@
 #[derive(Debug)]
+#[allow(dead_code)]
 pub(crate) struct Person<'a> {
     pub(crate) name: &'a str,
     pub(crate) age: u8,
