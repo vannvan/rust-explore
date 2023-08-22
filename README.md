@@ -6,3 +6,6 @@
 - [hellowasm](hellowasm) 构建基础wasm
 - [wasm-pack的基础应用](hello-webassembly)
 - [kt-cli](kt-cli) 一个类似`cat`命令的CLI工具实现
+- [trait-demo] trait特征的基本用法
+- [client] 请求相关的用法
+- [output] 输出和自定义输出
