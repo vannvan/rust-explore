@@ -3,6 +3,7 @@ use crate::gargen::vegetables::Asparagus;
 pub mod dump;
 pub mod gargen;
 pub mod generics;
+pub mod match_fn;
 pub mod rect;
 
 //用户
@@ -70,6 +71,10 @@ fn main() {
 
     // 外部模块
     dump::main();
+
+    match_fn::main();
+    match_fn::part_match();
+    match_fn::if_let();
 
     // let _s = generics::SingleGen(1);
 
