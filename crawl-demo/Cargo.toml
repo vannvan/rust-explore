@@ -1,0 +1,15 @@
+[package]
+name = "crawl-demo"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+http = "0.2.7"
+jsonpath = "0.1.1"
+reqwest = {version = "0.11.10",features = ["json","cookies"] }
+scraper = "0.17.1"
+serde_json = "1.0.81"
+thirtyfour = "0.31.0"
+tokio = { version = "1.18.2", features = ["full"] }
