@@ -1,11 +1,39 @@
 use regex::Regex;
-use std::fs;
-use std::io::{Read, Result};
+use std::fs::{self, OpenOptions};
+use std::io::{self, Read, Result};
 use std::path;
 use walkdir::{DirEntry, WalkDir};
 
 fn main() {
     println!("文件操作");
+
+    // 创建一个目录，返回 `io::Result<()>`
+    match fs::create_dir("a") {
+        Err(why) => println!("! {:?}", why.kind()),
+        Ok(_) => {}
+    }
+
+    println!("`mkdir -p a/c/d`");
+    // 递归地创建一个目录，返回 `io::Result<()>`
+    fs::create_dir_all("a/c/d").unwrap_or_else(|why| {
+        println!("! {:?}", why.kind());
+    });
+
+    println!("`touch a/c/e.txt`");
+    touch_2(&path::Path::new("a/c/e.txt")).unwrap_or_else(|why| {
+        println!("! {:?}", why.kind());
+    });
+
+    println!("`ls a`");
+    // 读取目录的内容，返回 `io::Result<Vec<Path>>`
+    match fs::read_dir("a") {
+        Err(why) => println!("! {:?}", why.kind()),
+        Ok(paths) => {
+            for path in paths {
+                println!("> {:?}", path.unwrap().path());
+            }
+        }
+    }
 
     let not_exit_file = "不存在的文件.txt";
 
@@ -62,6 +90,14 @@ fn main() {
 
     // walkdir方法使用
     walkdir()
+}
+
+// `% touch path` 的简单实现（忽略已存在的文件）
+fn touch_2(path: &path::Path) -> io::Result<()> {
+    match OpenOptions::new().create(true).write(true).open(path) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(e),
+    }
 }
 
 // 新建文件
