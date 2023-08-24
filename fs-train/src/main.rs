@@ -9,19 +9,19 @@ fn main() {
 
     // 创建一个目录，返回 `io::Result<()>`
     match fs::create_dir("a") {
-        Err(why) => println!("! {:?}", why.kind()),
+        Err(why) => println!("create_dir 报错! {:?}", why.kind()),
         Ok(_) => {}
     }
 
     println!("`mkdir -p a/c/d`");
     // 递归地创建一个目录，返回 `io::Result<()>`
     fs::create_dir_all("a/c/d").unwrap_or_else(|why| {
-        println!("! {:?}", why.kind());
+        println!("create_dir_all 报错! {:?}", why.kind());
     });
 
     println!("`touch a/c/e.txt`");
     touch_2(&path::Path::new("a/c/e.txt")).unwrap_or_else(|why| {
-        println!("! {:?}", why.kind());
+        println!("touch报错 ! {:?}", why.kind());
     });
 
     println!("`ls a`");
