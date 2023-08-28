@@ -9,20 +9,15 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn build(mut args: impl Iterator<Item = String>) -> Result<Config, &'static str> {
+    pub fn build(args: &[String]) -> Result<Config, &'static str> {
         // 参数校验
-        // 第一个参数是程序名，不用它
-        args.next();
 
-        let query = match args.next() {
-            Some(arg) => arg,
-            None => return Err("没有参数"),
-        };
+        if args.len() < 3 {
+            return Err("参数错误");
+        }
 
-        let file_path = match args.next() {
-            Some(arg) => arg,
-            None => return Err("没有目标文件"),
-        };
+        let query = args[1].clone();
+        let file_path = args[2].clone();
 
         // 接收环境变量
         //  可以这么用： IGNORE_CASE=1 cargo run -- to test.txt
@@ -58,38 +53,27 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    // let mut results = Vec::new();
-    // for line in contents.lines() {
-    //     if line.contains(query) {
-    //         results.push(line);
-    //     }
-    // }
+    let mut results = Vec::new();
+    for line in contents.lines() {
+        if line.contains(query) {
+            results.push(line);
+        }
+    }
 
-    // results
-
-    // 使用迭代器
-    contents
-        .lines()
-        .filter(|line| line.contains(query))
-        .collect()
+    results
 }
 
 // 对大小写不敏感
 pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    // let query = query.to_lowercase();
-    // let mut results = Vec::new();
-    // for line in contents.lines() {
-    //     if line.to_lowercase().contains(&query) {
-    //         results.push(line);
-    //     }
-    // }
+    let query = query.to_lowercase();
+    let mut results = Vec::new();
+    for line in contents.lines() {
+        if line.to_lowercase().contains(&query) {
+            results.push(line);
+        }
+    }
 
-    // results
-    // 使用迭代器
-    contents
-        .lines()
-        .filter(|line| line.to_lowercase().contains(query))
-        .collect()
+    results
 }
 
 #[cfg(test)]
