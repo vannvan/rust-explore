@@ -4,6 +4,9 @@
 
 use clap::{Parser, Subcommand};
 
+use crate::libs::log::Log;
+#[allow(special_module_name)]
+mod libs;
 /// 语雀知识库CLI工具
 #[derive(Debug, Parser)] // requires `derive` feature
 #[command(name = "ytool")]
@@ -42,6 +45,7 @@ enum Commands {
 
 fn main() {
     let args = Cli::parse();
+
     match args.command {
         Commands::Pull {
             username,
@@ -53,6 +57,12 @@ fn main() {
             let skip = skip.unwrap();
             let lb = lb.unwrap();
             let toc_range = toc_range.unwrap();
+
+            Log::success("成功的消息!");
+            Log::error("成功的消息!");
+            Log::warn("警告的消息!");
+            Log::info("普通的消息!");
+
             println!("用户信息 {username},{password},{toc_range},{skip},{lb}");
         }
         Commands::Clear => {
