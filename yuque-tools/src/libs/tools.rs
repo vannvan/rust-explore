@@ -33,15 +33,11 @@ impl Tools {
         }
     }
 
-    pub fn login_yuque_and_save_cookies(
-        user_config: UserConfig,
-    ) -> Result<&'static str, &'static str> {
-        let s = YuqueApi::login(user_config);
-        println!("{}", String::from(&s));
-        if Some(s).is_some() {
-            Ok("ss")
+    pub async fn login_yuque_and_save_cookies(user_config: UserConfig) -> Result<(), bool> {
+        if let Ok(_e) = YuqueApi::login(user_config).await {
+            Ok(())
         } else {
-            Err("dd")
+            Err(false)
         }
     }
 }

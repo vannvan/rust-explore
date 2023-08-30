@@ -10,3 +10,12 @@ owo-colors = "3"
 serde = { version = "1.0.104", features = ["derive"] }
 serde_json = "1.0.48"
 reqwest = { version = "0.11", features = ["json"] }
+tokio = { version = "1.32.0", features = ["full"] }
+
+rsa = "0.9.2"
+
+rand ='0.8'
+
+base64 = "0.21.3"
+
+chrono='0.4'

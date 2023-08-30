@@ -29,7 +29,7 @@ pub enum Commands {
 pub struct YCommand;
 
 impl YCommand {
-    pub fn new() -> Result<(), &'static str> {
+    pub async fn new() -> Result<(), &'static str> {
         let args = Cli::parse();
         match args.command {
             Commands::Pull => {
@@ -39,13 +39,14 @@ impl YCommand {
                 // Log::info("普通的消息!");
 
                 match Tools::get_user_config() {
-                    Ok(user_config) => match Tools::login_yuque_and_save_cookies(user_config) {
-                        Ok(_) => Log::success("登录成功!"),
-                        Err(_) => {
+                    Ok(user_config) => {
+                        if let Ok(_resp) = Tools::login_yuque_and_save_cookies(user_config).await {
+                            Log::success("登录成功!")
+                        } else {
                             Log::error("登录失败");
                             process::exit(1)
                         }
-                    },
+                    }
                     Err(err) => Log::error(err),
                 }
 
