@@ -1,7 +1,8 @@
-use super::{encrypt::encrypt_password, tools::UserConfig};
 use reqwest::header::HeaderMap;
 use serde_json::value::Value;
 use std::collections::HashMap;
+
+use crate::libs::{encrypt::encrypt_password, tools::UserConfig};
 // use serde::Deserialize;
 // use serde_json::Value;
 // #![deny(warnings)]
@@ -18,8 +19,12 @@ impl YuqueApi {
         println!("登录语雀:{:?}", user_config);
 
         if let Ok(resp) = Self::post(user_config).await {
-            println!("返回消息{:#?}", resp);
-            Ok(true)
+            // println!("返回消息{:#?}", resp);
+            if resp.get("data").is_some() {
+                Ok(true)
+            } else {
+                Err(false)
+            }
         } else {
             Err(false)
         }
@@ -31,7 +36,6 @@ impl YuqueApi {
             .json::<HashMap<String, String>>()
             .await?)
     }
-
     pub async fn post(user_info: UserConfig) -> Result<HashMap<String, Value>, reqwest::Error> {
         // post 请求要创建client
         let client = reqwest::Client::new();
@@ -42,7 +46,6 @@ impl YuqueApi {
         headers.insert("Content-Type", "application/json".parse().unwrap());
         headers.insert("referer", referer.parse().unwrap());
         headers.insert("origin", "https://www.yuque.com".parse().unwrap());
-        // headers.insert("Cookies", "ssss".parse().unwrap());
 
         // 组装要提交的数据
         let _password = encrypt_password(&user_info.password);
@@ -53,13 +56,26 @@ impl YuqueApi {
 
         // 发起post请求并返回
         let url = [YUQUE_HOST, LOGIN].join("");
-        Ok(client
-            .post(url)
+        let res = client
+            .post(&url)
             .headers(headers)
             .json(&data)
             .send()
-            .await?
-            .json::<HashMap<String, Value>>()
-            .await?)
+            .await?;
+
+        let mut vec = vec![];
+        for item in res
+            .headers()
+            .iter()
+            .filter(|x| x.0 == "set-cookie")
+            .map(|s| s.1.to_str())
+        {
+            vec.push(item.unwrap())
+        }
+
+        let cookies = vec.join(";");
+
+        println!("cookies->  {}", cookies);
+        Ok(res.json::<HashMap<String, Value>>().await?)
     }
 }

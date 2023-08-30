@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use std::{fs::File, io::Read, path::Path};
 
-use super::yuque::YuqueApi;
+use crate::core::yuque::YuqueApi;
 
 #[derive(Debug, Deserialize)]
 pub struct UserConfig {

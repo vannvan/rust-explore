@@ -1,8 +1,8 @@
 use std::process;
 
+use crate::core::command::YCommand;
 use crate::libs::log::Log;
-use libs::command::YCommand;
-
+mod core;
 mod libs;
 #[tokio::main]
 async fn main() {
