@@ -7,13 +7,14 @@
  * Copyright (c) https://github.com/vannvan
  */
 
+use owo_colors::OwoColorize;
 // use config::Config;
 use regex::Regex;
 use reqwest::header::HeaderMap;
 use serde_json::Value;
 use std::collections::HashMap;
 
-use super::constants::{REFERER, YUQUE_HOST};
+use super::constants::{get_conf, Conf, REFERER, YUQUE_HOST};
 
 #[allow(dead_code)]
 pub fn crawl() {
