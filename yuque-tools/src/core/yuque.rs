@@ -1,3 +1,12 @@
+/*
+ * Description: yuque相关的接口调用
+ * Created: 2023-08-31 09:41:21
+ * Author: vannvan
+ * Email : adoerww@gmail.com
+ * -----
+ * Copyright (c) https://github.com/vannvan
+ */
+
 use reqwest::header::HeaderMap;
 use serde_json::value::Value;
 use std::collections::HashMap;

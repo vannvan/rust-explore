@@ -1,3 +1,12 @@
+/*
+ * Description: 命令入口
+ * Created: 2023-08-31 09:41:21
+ * Author: vannvan
+ * Email : adoerww@gmail.com
+ * -----
+ * Copyright (c) https://github.com/vannvan
+ */
+
 use crate::libs::log::Log;
 use crate::libs::tools::Tools;
 use clap::{Parser, Subcommand};

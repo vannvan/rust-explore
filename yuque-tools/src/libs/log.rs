@@ -1,3 +1,12 @@
+/*
+ * Description: 打印信息
+ * Created: 2023-08-30 09:24:54
+ * Author: vannvan
+ * Email : adoerww@gmail.com
+ * -----
+ * Copyright (c) https://github.com/vannvan
+ */
+
 use owo_colors::OwoColorize;
 
 #[allow(dead_code)]

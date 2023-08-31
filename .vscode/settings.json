@@ -19,5 +19,35 @@
       "editorInlayHint.parameterForeground": "#fdb6fdf0"
     }
   },
-  "cSpell.words": ["Cammand", "referer", "yuque"]
+  "cSpell.words": ["Cammand", "referer", "yuque"],
+  "psi-header.lang-config": [
+    {
+      "language": "Rust",
+      "begin": "/**",
+      "prefix": " * ",
+      "end": " */",
+      "blankLinesAfter": 2,
+      "forceToTop": false
+    },
+    {
+      "language": "Rust",
+      "mapTo": "Rust"
+    }
+  ],
+  "psi-header.templates": [
+    {
+      "language": "Rust",
+      "template": [
+        "Description: ",
+        "Created: <<filecreated('YYYY-MM-DD HH:mm:ss')>>",
+        "Author: vannvan",
+        "Email : adoerww@gmail.com",
+        "-----",
+        "Copyright (c) https://github.com/vannvan"
+      ]
+    }
+  ],
+  "psi-header.changes-tracking": {
+    "autoHeader": "autoSave" // 新增文件时自动创建
+  }
 }

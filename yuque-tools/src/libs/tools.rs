@@ -1,3 +1,12 @@
+/*
+ * Description: 工具方法
+ * Created: 2023-08-31 09:41:21
+ * Author: vannvan
+ * Email : adoerww@gmail.com
+ * -----
+ * Copyright (c) https://github.com/vannvan
+ */
+
 use serde::Deserialize;
 use std::{fs::File, io::Read, path::Path};
 

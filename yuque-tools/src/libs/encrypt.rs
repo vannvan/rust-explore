@@ -1,3 +1,11 @@
+/*
+ * Description: 加密
+ * Created: 2023-08-30 11:33:49
+ * Author: vannvan
+ * Email : adoerww@gmail.com
+ * -----
+ * Copyright (c) https://github.com/vannvan
+ */
 use rsa::{pkcs8::DecodePublicKey, Pkcs1v15Encrypt, RsaPublicKey};
 
 use std::time::{SystemTime, UNIX_EPOCH};
