@@ -9,7 +9,8 @@
 
 use std::collections::HashMap;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serializer};
+use serde_json::Value;
 pub const YUQUE_HOST: &str = "https://www.yuque.com";
 
 pub const REFERER: &str = "https://www.yuque.com/login";
@@ -18,18 +19,28 @@ pub enum ConfigKeys {
     GetBooks,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serializer)]
 pub struct Conf {
     pub get_books: String,
 }
 
-pub fn get_conf(key: String) {
-    let j = "
-  {
-      \"fingerprint\": \"0xF9BA143B95FF6D82\",
-      \"location\": \"Menlo Park, CA\"
-  }";
+fn get_config_value(key: &str) -> Option<&Value> {
+    let config_json = r#"
+        {
+            "get_books": "value1"
+        }
+    "#;
 
-    let foo: Conf = serde_json::from_str(&j).unwrap();
-    // age.get('ss')
+    let config: HashMap<String, Value> = serde_json::from_str(config_json).unwrap();
+    config.get(key)
+}
+
+#[test]
+fn test() {
+    let key = Conf {
+        get_books: String::new(),
+    }
+    .get_books;
+    let value = get_config_value(&key);
+    println!("{:?}", value);
 }

@@ -12,9 +12,9 @@ use owo_colors::OwoColorize;
 use regex::Regex;
 use reqwest::header::HeaderMap;
 use serde_json::Value;
-use std::collections::HashMap;
+use std::{collections::HashMap, fs::read_to_string};
 
-use super::constants::{get_conf, Conf, REFERER, YUQUE_HOST};
+use super::constants::{REFERER, YUQUE_HOST};
 
 #[allow(dead_code)]
 pub fn crawl() {
