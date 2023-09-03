@@ -8,9 +8,10 @@
  */
 
 use crate::libs::log::Log;
-use crate::libs::tools::Tools;
 use clap::{Parser, Subcommand};
 use std::process;
+
+use super::scheduler::Scheduler;
 
 #[derive(Debug, Parser)] // requires `derive` feature
 #[command(name = "ytool")]
@@ -47,9 +48,11 @@ impl YCommand {
                 // Log::warn("警告的消息!");
                 // Log::info("普通的消息!");
 
-                match Tools::get_user_config() {
+                match Scheduler::get_user_config() {
                     Ok(user_config) => {
-                        if let Ok(_resp) = Tools::login_yuque_and_save_cookies(user_config).await {
+                        if let Ok(_resp) =
+                            Scheduler::login_yuque_and_save_cookies(user_config).await
+                        {
                             Log::success("登录成功!")
                         } else {
                             Log::error("登录失败");

@@ -7,40 +7,47 @@
  * Copyright (c) https://github.com/vannvan
  */
 
-use std::collections::HashMap;
+pub mod init_load_config;
+use std::fs;
 
-use serde::{Deserialize, Serializer};
-use serde_json::Value;
+use lazy_static::lazy_static;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+
 pub const YUQUE_HOST: &str = "https://www.yuque.com";
 
 pub const REFERER: &str = "https://www.yuque.com/login";
-#[derive(Hash, Eq, PartialEq, Debug)]
-pub enum ConfigKeys {
-    GetBooks,
-}
 
-#[derive(Deserialize, Debug, Serializer)]
-pub struct Conf {
+const CONFIG_FILE_PATH: &str = "src/libs/constants/config.json";
+
+fn parse_json<T: DeserializeOwned>(schema: &str) -> Option<T> {
+    match serde_json::from_str(schema) {
+        Ok(parsed) => Some(parsed),
+        Err(e) => {
+            eprintln!("读取配置文件出错: {}", e.to_string());
+            None
+        }
+    }
+}
+#[derive(Serialize, Deserialize, Debug)]
+
+pub struct GlobalConfig {
+    pub login_api: String,
     pub get_books: String,
 }
 
-fn get_config_value(key: &str) -> Option<&Value> {
-    let config_json = r#"
-        {
-            "get_books": "value1"
-        }
-    "#;
+fn load_conf() -> GlobalConfig {
+    let config_file = fs::read_to_string(CONFIG_FILE_PATH).unwrap();
+    let parsed_json = parse_json::<GlobalConfig>(&config_file).unwrap();
+    parsed_json
+}
 
-    let config: HashMap<String, Value> = serde_json::from_str(config_json).unwrap();
-    config.get(key)
+lazy_static! {
+    pub static ref GLOBAL_CONFIG: GlobalConfig = load_conf();
 }
 
 #[test]
-fn test() {
-    let key = Conf {
-        get_books: String::new(),
-    }
-    .get_books;
-    let value = get_config_value(&key);
-    println!("{:?}", value);
+
+fn test_fn() {
+    let config = load_conf();
+    println!("{:?}", config)
 }

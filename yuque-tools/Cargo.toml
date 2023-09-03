@@ -16,4 +16,4 @@ rand = '0.8'
 base64 = "0.21.3"
 chrono = '0.4'
 regex = '1.0'
-config-rs = '0.1'
+lazy_static = "1.0"
