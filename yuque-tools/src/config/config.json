@@ -1,0 +1,13 @@
+{
+  "yuque_host": "https://www.yuque.com",
+  "yuque_referer": "https://www.yuque.com/login",
+  "yuque_login": "/api/accounts/login",
+  "yuque_book_stacks": "get_books_api",
+  "yuque_books_info": "",
+  "yuque_export_markdown": "",
+  "meta_dir": ".meta",
+  "user_info_file": "",
+  "books_info_file": "",
+  "duration": 500,
+  "local_expire": 86400000
+}

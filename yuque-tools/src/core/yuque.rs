@@ -22,7 +22,7 @@ impl YuqueApi {
         params.insert("password", _password);
         params.insert("loginType", "password".to_string());
 
-        if let Ok(resp) = Request::post(&GLOBAL_CONFIG.login_api, params).await {
+        if let Ok(resp) = Request::post(&GLOBAL_CONFIG.yuque_login, params).await {
             // println!("返回消息{:#?}", resp);
             if resp.get("data").is_some() {
                 Ok(true)

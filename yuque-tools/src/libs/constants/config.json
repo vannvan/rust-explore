@@ -1,5 +1,0 @@
-{
-  "yuque_host": "",
-  "login_api": "/api/accounts/login",
-  "get_books": "get_books_api"
-}

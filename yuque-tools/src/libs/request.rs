@@ -13,7 +13,7 @@ use reqwest::header::HeaderMap;
 use serde_json::Value;
 use std::collections::HashMap;
 
-use super::constants::{REFERER, YUQUE_HOST};
+use crate::libs::constants::GLOBAL_CONFIG;
 
 #[allow(dead_code)]
 pub fn crawl() {
@@ -29,8 +29,8 @@ impl Request {
         // 组装header
         let mut headers = HeaderMap::new();
         headers.insert("Content-Type", "application/json".parse().unwrap());
-        headers.insert("referer", REFERER.parse().unwrap());
-        headers.insert("origin", YUQUE_HOST.parse().unwrap());
+        headers.insert("referer", GLOBAL_CONFIG.yuque_referer.parse().unwrap());
+        headers.insert("origin", GLOBAL_CONFIG.yuque_host.parse().unwrap());
         return headers;
     }
 
@@ -49,7 +49,7 @@ impl Request {
         let client = reqwest::Client::new();
         let header = Self::request_header();
 
-        let target_url = [YUQUE_HOST, &url].join("");
+        let target_url = [&GLOBAL_CONFIG.yuque_host, url].join("");
         let res = client
             .post(target_url)
             .headers(header)
