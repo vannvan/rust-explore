@@ -11,9 +11,9 @@
 use regex::Regex;
 use reqwest::header::HeaderMap;
 use serde_json::Value;
-use std::collections::HashMap;
+use std::{collections::HashMap, process};
 
-use crate::libs::constants::GLOBAL_CONFIG;
+use crate::libs::{constants::GLOBAL_CONFIG, file::File, tools::gen_timestamp};
 
 #[allow(dead_code)]
 pub fn crawl() {
@@ -73,7 +73,25 @@ impl Request {
 
             let cookies = vec.join(";");
 
-            println!("cookies->  {}", cookies);
+            let cookies_info = format!(
+                r#"{{"type": "{}", "type2": "{}"}}"#,
+                gen_timestamp(),
+                cookies
+            );
+
+            let f = File::new();
+
+            let file = GLOBAL_CONFIG.meta_dir.clone() + &GLOBAL_CONFIG.cookies_file;
+            match f.mkdir(&GLOBAL_CONFIG.meta_dir) {
+                Ok(_) => match f.write(&file, cookies_info.to_owned()) {
+                    Err(_) => {
+                        println!("文件创建失败");
+                        process::exit(1)
+                    }
+                    Ok(_) => (),
+                },
+                Err(_) => process::exit(1),
+            }
         }
 
         Ok(res.json::<HashMap<String, Value>>().await?)

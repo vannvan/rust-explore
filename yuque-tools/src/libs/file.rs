@@ -3,10 +3,11 @@ use std::{
     io::{Error, Read, Write},
     path,
 };
+#[allow(unused_imports)]
 
 /// 文件
 pub struct File {}
-
+#[allow(dead_code)]
 impl File {
     pub fn new() -> Self {
         File {}
@@ -72,5 +73,27 @@ impl File {
         fs::remove_dir(d)?;
 
         Ok(())
+    }
+}
+
+#[test]
+fn test() {
+    let f = File::new();
+
+    let cookies = "啊哈哈啊".to_string();
+    let dir = ".meta".to_string();
+    let file = dir + "/cookies.json";
+    match f.mkdir(".meta") {
+        Ok(_) => match f.write(&file, cookies) {
+            Ok(_) => {
+                println!("创建成功")
+            }
+            _ => {
+                println!("文件创建失败");
+            }
+        },
+        Err(_err) => {
+            println!("元目录创建失败");
+        }
     }
 }

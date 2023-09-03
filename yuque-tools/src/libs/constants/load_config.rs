@@ -33,6 +33,10 @@ pub struct GlobalConfig {
     pub yuque_books_info: String,
     /// 导出md文件
     pub yuque_export_markdown: String,
+    /// meta
+    pub meta_dir: String,
+    /// cookies_file
+    pub cookies_file: String,
 }
 
 /// 加载配置
