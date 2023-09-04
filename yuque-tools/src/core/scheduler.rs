@@ -29,7 +29,6 @@ impl Scheduler {
         let cookies = get_local_cookies();
 
         if cookies.is_empty() {
-            println!("cookies-> {}", cookies);
             match Self::get_user_config() {
                 Ok(user_config) => {
                     if let Ok(_resp) = Self::login_yuque_and_save_cookies(user_config).await {
@@ -43,6 +42,8 @@ impl Scheduler {
             }
         } else {
             // 有cookie，不走登录
+            // println!("cookies-> {}", cookies);
+            YuqueApi::get_user_bookstacks().await
         }
         Ok(())
     }
