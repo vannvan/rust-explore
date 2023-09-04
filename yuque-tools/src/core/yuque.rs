@@ -9,10 +9,13 @@
 
 use crate::core::scheduler::UserConfig;
 use crate::libs::constants::GLOBAL_CONFIG;
+use crate::libs::file::File;
+use crate::libs::log::Log;
 use crate::libs::{encrypt::encrypt_password, request::Request};
 use std::collections::HashMap;
 pub struct YuqueApi;
 
+#[allow(dead_code)]
 impl YuqueApi {
     /// 登录语雀
     pub async fn login(user_config: UserConfig) -> Result<bool, bool> {
@@ -24,7 +27,6 @@ impl YuqueApi {
         params.insert("loginType", "password".to_string());
 
         if let Ok(resp) = Request::post(&GLOBAL_CONFIG.yuque_login, params).await {
-            // println!("返回消息{:#?}", resp);
             if resp.get("data").is_some() {
                 Ok(true)
             } else {
@@ -37,7 +39,36 @@ impl YuqueApi {
 
     /// 获取知识库列表数据
     pub async fn get_user_bookstacks() {
-        //
+        Log::info(&"开始获取知识库");
+        if let Ok(resp) = Request::get(&GLOBAL_CONFIG.yuque_book_stacks).await {
+            if resp.get("data").is_some() {
+                // println!("{:?}", resp)
+
+                // let flat =
+                //     books_data.map(|item| item.get(0).and_then(|s| s.get("books".to_string())));
+                // let mut books = Vec::new();
+
+                // if let Some(item) = books_data {
+                //     // if let Some(sub_item) = item.get("books") {
+                //     // books.push(sub_item);
+                //     // }
+                //     books.push(item.get("books"));
+                //     println!("{:?}", item.get(0))
+                // }
+
+                // let flat: Vec<_> = books_data.iter().map(|x| x).collect();
+
+                // let f = File::new();
+
+                // let _ = f.write(
+                //     "tst.json",
+                //     serde_json::to_string(&flat).into_iter().collect(),
+                // );
+                // println!("{:?}", serde_json::to_string(&books).unwrap())
+            } else {
+                println!("获取失败")
+            }
+        }
     }
 
     /// 获取知识库下文档数据
