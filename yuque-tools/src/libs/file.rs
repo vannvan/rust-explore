@@ -1,3 +1,12 @@
+/*
+ * Description: 文件操作
+ * Created: 2023-08-31 22:09:40
+ * Author: vannvan
+ * Email : adoerww@gmail.com
+ * -----
+ * Copyright (c) https://github.com/vannvan
+ */
+
 use std::{
     fs,
     io::{Error, Read, Write},
