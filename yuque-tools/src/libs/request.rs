@@ -10,7 +10,7 @@
 // use config::Config;
 use regex::Regex;
 use reqwest::header::HeaderMap;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::{collections::HashMap, process};
 
 use crate::libs::{constants::GLOBAL_CONFIG, file::File, tools::gen_timestamp};
@@ -73,17 +73,15 @@ impl Request {
 
             let cookies = vec.join(";");
 
-            let cookies_info = format!(
-                r#"{{"type": "{}", "type2": "{}"}}"#,
-                gen_timestamp(),
-                cookies
-            );
+            let cookies_info = json!( {
+                "expire_time": gen_timestamp(),
+                "cookies": cookies
+            });
 
             let f = File::new();
 
-            let file = GLOBAL_CONFIG.meta_dir.clone() + &GLOBAL_CONFIG.cookies_file;
             match f.mkdir(&GLOBAL_CONFIG.meta_dir) {
-                Ok(_) => match f.write(&file, cookies_info.to_owned()) {
+                Ok(_) => match f.write(&GLOBAL_CONFIG.cookies_file, cookies_info.to_string()) {
                     Err(_) => {
                         println!("文件创建失败");
                         process::exit(1)

@@ -7,11 +7,8 @@
  * Copyright (c) https://github.com/vannvan
  */
 
-use crate::libs::log::Log;
-use clap::{Parser, Subcommand};
-use std::process;
-
 use super::scheduler::Scheduler;
+use clap::{Parser, Subcommand};
 
 #[derive(Debug, Parser)] // requires `derive` feature
 #[command(name = "ytool")]
@@ -43,25 +40,7 @@ impl YCommand {
         let args = Cli::parse();
         match args.command {
             Commands::Pull => {
-                // Log::success("成功的消息!");
-                // Log::error("成功的消息!");
-                // Log::warn("警告的消息!");
-                // Log::info("普通的消息!");
-
-                match Scheduler::get_user_config() {
-                    Ok(user_config) => {
-                        if let Ok(_resp) =
-                            Scheduler::login_yuque_and_save_cookies(user_config).await
-                        {
-                            Log::success("登录成功!")
-                        } else {
-                            Log::error("登录失败");
-                            process::exit(1)
-                        }
-                    }
-                    Err(err) => Log::error(err),
-                }
-
+                let _ = Scheduler::start().await;
                 Ok(())
             }
             Commands::Clear => {

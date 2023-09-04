@@ -6,7 +6,7 @@
   "yuque_books_info": "",
   "yuque_export_markdown": "",
   "meta_dir": ".meta",
-  "cookies_file": "/cookies.json",
+  "cookies_file": ".meta/cookies.json",
   "user_info_file": "",
   "books_info_file": "",
   "duration": 500,

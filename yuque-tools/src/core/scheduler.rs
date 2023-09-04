@@ -8,9 +8,12 @@
  */
 
 use serde::Deserialize;
-use std::{fs::File, io::Read, path::Path};
+use std::{fs::File, io::Read, path::Path, process};
 
-use crate::core::yuque::YuqueApi;
+use crate::{
+    core::yuque::YuqueApi,
+    libs::{log::Log, tools::get_local_cookies},
+};
 
 #[derive(Debug, Deserialize)]
 pub struct UserConfig {
@@ -22,6 +25,28 @@ pub struct Scheduler {
     //
 }
 impl Scheduler {
+    pub async fn start() -> Result<(), &'static str> {
+        let cookies = get_local_cookies();
+
+        if !cookies.is_empty() {
+            // 有cookie，不走登录
+            println!("cookies-> {}", cookies);
+        } else {
+            match Self::get_user_config() {
+                Ok(user_config) => {
+                    if let Ok(_resp) = Self::login_yuque_and_save_cookies(user_config).await {
+                        Log::success("登录成功!")
+                    } else {
+                        Log::error("登录失败");
+                        process::exit(1)
+                    }
+                }
+                Err(err) => Log::error(err),
+            }
+        }
+        Ok(())
+    }
+
     /// 获取用户配置信息
     pub fn get_user_config() -> Result<UserConfig, &'static str> {
         // println!("获取本地用户信息");
@@ -41,7 +66,7 @@ impl Scheduler {
             Err("配置文件不存在")
         }
     }
-
+    /// 登录语雀并存储cookies
     pub async fn login_yuque_and_save_cookies(user_config: UserConfig) -> Result<(), bool> {
         if let Ok(_e) = YuqueApi::login(user_config).await {
             Ok(())

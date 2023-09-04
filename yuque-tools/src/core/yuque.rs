@@ -14,6 +14,7 @@ use std::collections::HashMap;
 pub struct YuqueApi;
 
 impl YuqueApi {
+    /// 登录语雀
     pub async fn login(user_config: UserConfig) -> Result<bool, bool> {
         // println!("登录语雀:{:?}", user_config);
         let _password = encrypt_password(&user_config.password);
@@ -32,5 +33,20 @@ impl YuqueApi {
         } else {
             Err(false)
         }
+    }
+
+    /// 获取知识库列表数据
+    pub async fn get_user_bookstacks() {
+        //
+    }
+
+    /// 获取知识库下文档数据
+    pub async fn get_book_docs_info() {
+        //
+    }
+
+    /// 通过下载接口获取到md文件内容
+    pub async fn get_markdown_content() {
+        //
     }
 }
