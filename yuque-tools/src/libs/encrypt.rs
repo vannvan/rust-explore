@@ -17,7 +17,12 @@ pub fn encrypt_password(target_str: &str) -> String {
     let mut rng = rand::thread_rng();
 
     // println!("{}", &time);
-    let password = [gen_timestamp(), ":".to_string(), target_str.to_string()].join("");
+    let password = [
+        gen_timestamp().to_string(),
+        ":".to_string(),
+        target_str.to_string(),
+    ]
+    .join("");
 
     let enc_data = pub_key
         .encrypt(&mut rng, Pkcs1v15Encrypt, password.as_bytes())

@@ -8,6 +8,7 @@
  */
 use lazy_static::lazy_static;
 pub mod load_config;
+pub mod schema;
 use crate::libs::constants::load_config::{load_conf, GlobalConfig};
 
 lazy_static! {
