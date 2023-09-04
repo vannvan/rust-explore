@@ -15,11 +15,11 @@ pub fn get_local_cookies() -> String {
     if let Ok(cookie_info) = f.read(&GLOBAL_CONFIG.cookies_file) {
         let config: LocalCookiesInfo = serde_json::from_str(&cookie_info).expect("JSON解析失败");
         if config.expire_time > gen_timestamp() {
-            "".to_owned()
+            String::new()
         } else {
             config.cookies
         }
     } else {
-        "".to_owned()
+        String::new()
     }
 }
