@@ -28,10 +28,8 @@ impl Scheduler {
     pub async fn start() -> Result<(), &'static str> {
         let cookies = get_local_cookies();
 
-        if !cookies.is_empty() {
-            // 有cookie，不走登录
+        if cookies.is_empty() {
             println!("cookies-> {}", cookies);
-        } else {
             match Self::get_user_config() {
                 Ok(user_config) => {
                     if let Ok(_resp) = Self::login_yuque_and_save_cookies(user_config).await {
@@ -43,6 +41,8 @@ impl Scheduler {
                 }
                 Err(err) => Log::error(err),
             }
+        } else {
+            // 有cookie，不走登录
         }
         Ok(())
     }
