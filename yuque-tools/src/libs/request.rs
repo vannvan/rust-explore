@@ -10,10 +10,15 @@
 // use config::Config;
 use regex::Regex;
 use reqwest::header::HeaderMap;
+
 use serde_json::{json, Value};
 use std::{collections::HashMap, process};
 
-use crate::libs::{constants::GLOBAL_CONFIG, file::File, tools::gen_timestamp};
+use crate::libs::{
+    constants::GLOBAL_CONFIG,
+    file::File,
+    tools::{gen_timestamp, get_local_cookies},
+};
 
 #[allow(dead_code)]
 pub fn crawl() {
@@ -34,12 +39,23 @@ impl Request {
         return headers;
     }
 
-    #[allow(unused)]
-    pub async fn get(url: &str) -> Result<HashMap<String, String>, reqwest::Error> {
-        Ok(reqwest::get(url)
-            .await?
-            .json::<HashMap<String, String>>()
-            .await?)
+    pub async fn get(url: &str) -> Result<HashMap<String, Value>, reqwest::Error> {
+        let target_url = GLOBAL_CONFIG.yuque_host.clone() + &url;
+        println!("get请求,{}", &target_url);
+        // let res = reqwest::get(&target_url);
+        // Ok(res.json::<HashMap<String, String>>().await?)
+        let client = reqwest::Client::new();
+
+        let res = client
+            .get(target_url)
+            .header("cookie", get_local_cookies())
+            .header("content-type", "application/json")
+            .header("x-requested-with", "XMLHttpRequest")
+            .send()
+            .await?;
+
+        // println!("----{}", res.text().await?);
+        Ok(res.json::<HashMap<String, Value>>().await?)
     }
 
     pub async fn post(
@@ -49,7 +65,7 @@ impl Request {
         let client = reqwest::Client::new();
         let header = Self::request_header();
 
-        let target_url = [&GLOBAL_CONFIG.yuque_host, url].join("");
+        let target_url = GLOBAL_CONFIG.yuque_host.clone() + &url;
         let res = client
             .post(target_url)
             .headers(header)
