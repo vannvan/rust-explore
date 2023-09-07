@@ -35,8 +35,16 @@ pub struct GlobalConfig {
     pub yuque_export_markdown: String,
     /// meta
     pub meta_dir: String,
+    /// 文档输出目录
+    pub target_output_dir: String,
     /// cookies_file
     pub cookies_file: String,
+    /// 用户信息
+    pub user_info_file: String,
+    /// 知识库信息
+    pub books_info_file: String,
+    /// 过期时间,1天
+    pub local_expire: u128,
 }
 
 /// 加载配置

@@ -32,7 +32,11 @@ impl Scheduler {
             match Self::get_user_config() {
                 Ok(user_config) => {
                     if let Ok(_resp) = Self::login_yuque_and_save_cookies(user_config).await {
-                        Log::success("登录成功!")
+                        Log::success("登录成功!");
+                        // 接着就开始获取知识库
+                        if let Ok(books_info) = YuqueApi::get_user_bookstacks().await {
+                            //
+                        }
                     } else {
                         Log::error("登录失败");
                         process::exit(1)
@@ -43,7 +47,9 @@ impl Scheduler {
         } else {
             // 有cookie，不走登录
             // println!("cookies-> {}", cookies);
-            YuqueApi::get_user_bookstacks().await
+            if let Ok(books_info) = YuqueApi::get_user_bookstacks().await {
+                //
+            }
         }
         Ok(())
     }

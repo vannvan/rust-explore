@@ -7,12 +7,28 @@
  * Copyright (c) https://github.com/vannvan
  */
 
+use serde_json::json;
+
 use crate::core::scheduler::UserConfig;
-use crate::libs::constants::GLOBAL_CONFIG;
-use crate::libs::file::File;
-use crate::libs::log::Log;
-use crate::libs::{encrypt::encrypt_password, request::Request};
-use std::collections::HashMap;
+use std::{collections::HashMap, process};
+
+use crate::libs::{
+    constants::GLOBAL_CONFIG, encrypt::encrypt_password, file::File, log::Log, request::Request,
+    tools::gen_timestamp,
+};
+#[derive(PartialEq, Eq, Hash)]
+struct YuqueUser<'a> {
+    pub login: &'a str,
+    pub name: &'a str,
+}
+// #[derive(PartialEq, Eq, Hash)]
+struct BookInfo<'a> {
+    pub name: &'a str,
+    pub slug: &'a str,
+    pub stack_id: &'a str,
+    pub user: YuqueUser<'a>,
+}
+
 pub struct YuqueApi;
 
 #[allow(dead_code)]
@@ -38,30 +54,49 @@ impl YuqueApi {
     }
 
     /// 获取知识库列表数据
-    pub async fn get_user_bookstacks() {
+    pub async fn get_user_bookstacks() -> Result<bool, bool> {
         Log::info(&"开始获取知识库");
         if let Ok(resp) = Request::get(&GLOBAL_CONFIG.yuque_book_stacks).await {
             if resp.get("data").is_some() {
                 let mut books_data = vec![];
-                let flat = resp.get("data").unwrap();
+                let data_wrap = resp.get("data").unwrap();
 
-                for item in flat.as_array().unwrap() {
+                for item in data_wrap.as_array().unwrap() {
                     for sub_item in item.to_owned().get("books").unwrap().as_array().unwrap() {
-                        // println!("{:?}", sub_item)
-                        books_data.push(sub_item.to_owned())
+                        let book_info = json!({
+                          "name": sub_item.get("name"),
+                          "slug": sub_item.get("slug"),
+                          "stack_id": sub_item.get("stack_id"),
+                          "user": {
+                            "name": sub_item.get("user").unwrap().get("name"),
+                            "login": sub_item.get("user").unwrap().get("login")
+                          }
+                        });
+
+                        books_data.push(book_info)
                     }
                 }
 
                 let f = File::new();
 
-                let _ = f.write(
-                    ".meta/booksinfo.json",
-                    serde_json::to_string(&books_data).into_iter().collect(),
-                );
+                let books_info = json!({
+                    "expire_time": gen_timestamp() + GLOBAL_CONFIG.local_expire,
+                    "booksInfo": books_data
+                });
+
+                match f.write(&GLOBAL_CONFIG.books_info_file, books_info.to_string()) {
+                    Err(_) => {
+                        Log::error("文件创建失败");
+                        process::exit(1)
+                    }
+                    Ok(_) => Ok(true),
+                }
                 // println!("{:?}", serde_json::to_string(&books).unwrap())
             } else {
-                println!("获取失败")
+                Err(false)
             }
+        } else {
+            Err(false)
         }
     }
 

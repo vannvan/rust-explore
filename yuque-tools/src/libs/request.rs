@@ -1,5 +1,5 @@
 /*
- * Description:
+ * Description: 请求
  * Created: 2023-08-31 18:47:09
  * Author: vannvan
  * Email : adoerww@gmail.com
@@ -17,6 +17,7 @@ use std::{collections::HashMap, process};
 use crate::libs::{
     constants::GLOBAL_CONFIG,
     file::File,
+    log::Log,
     tools::{gen_timestamp, get_local_cookies},
 };
 
@@ -90,7 +91,7 @@ impl Request {
             let cookies = vec.join(";");
 
             let cookies_info = json!( {
-                "expire_time": gen_timestamp(),
+                "expire_time": gen_timestamp() + GLOBAL_CONFIG.local_expire,
                 "cookies": cookies
             });
 
@@ -99,7 +100,7 @@ impl Request {
             match f.mkdir(&GLOBAL_CONFIG.meta_dir) {
                 Ok(_) => match f.write(&GLOBAL_CONFIG.cookies_file, cookies_info.to_string()) {
                     Err(_) => {
-                        println!("文件创建失败");
+                        Log::error("文件创建失败");
                         process::exit(1)
                     }
                     Ok(_) => (),
