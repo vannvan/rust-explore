@@ -42,28 +42,22 @@ impl YuqueApi {
         Log::info(&"开始获取知识库");
         if let Ok(resp) = Request::get(&GLOBAL_CONFIG.yuque_book_stacks).await {
             if resp.get("data").is_some() {
-                // println!("{:?}", resp)
+                let mut books_data = vec![];
+                let flat = resp.get("data").unwrap();
 
-                // let flat =
-                //     books_data.map(|item| item.get(0).and_then(|s| s.get("books".to_string())));
-                // let mut books = Vec::new();
+                for item in flat.as_array().unwrap() {
+                    for sub_item in item.to_owned().get("books").unwrap().as_array().unwrap() {
+                        // println!("{:?}", sub_item)
+                        books_data.push(sub_item.to_owned())
+                    }
+                }
 
-                // if let Some(item) = books_data {
-                //     // if let Some(sub_item) = item.get("books") {
-                //     // books.push(sub_item);
-                //     // }
-                //     books.push(item.get("books"));
-                //     println!("{:?}", item.get(0))
-                // }
+                let f = File::new();
 
-                // let flat: Vec<_> = books_data.iter().map(|x| x).collect();
-
-                // let f = File::new();
-
-                // let _ = f.write(
-                //     "tst.json",
-                //     serde_json::to_string(&flat).into_iter().collect(),
-                // );
+                let _ = f.write(
+                    ".meta/booksinfo.json",
+                    serde_json::to_string(&books_data).into_iter().collect(),
+                );
                 // println!("{:?}", serde_json::to_string(&books).unwrap())
             } else {
                 println!("获取失败")
