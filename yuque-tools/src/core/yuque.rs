@@ -37,7 +37,7 @@ pub struct YuqueApi;
 
 #[allow(dead_code)]
 impl YuqueApi {
-    /// 登录语雀
+    /// 登录语雀并存储cookies
     pub async fn login(user_config: UserCliConfig) -> Result<bool, bool> {
         // println!("登录语雀:{:?}", user_config);
         let _password = encrypt_password(&user_config.password);
@@ -59,7 +59,7 @@ impl YuqueApi {
 
     /// 获取知识库列表数据
     pub async fn get_user_bookstacks() -> Result<bool, bool> {
-        Log::info(&"开始获取知识库");
+        Log::info("开始获取知识库");
         if let Ok(resp) = Request::get(&GLOBAL_CONFIG.yuque_book_stacks).await {
             if resp.get("data").is_some() {
                 let mut books_data = vec![];
@@ -88,6 +88,7 @@ impl YuqueApi {
                     "booksInfo": books_data
                 });
 
+                // 写入知识库信息文件
                 match f.write(&GLOBAL_CONFIG.books_info_file, books_info.to_string()) {
                     Err(_) => {
                         Log::error("文件创建失败");

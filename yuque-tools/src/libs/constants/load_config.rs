@@ -33,9 +33,9 @@ pub struct GlobalConfig {
     pub yuque_books_info: String,
     /// 导出md文件
     pub yuque_export_markdown: String,
-    /// meta
+    /// meta目录
     pub meta_dir: String,
-    /// 用户的cli配置
+    /// 用户的CLI配置
     pub user_cli_config_file: String,
     /// 文档输出目录
     pub target_output_dir: String,

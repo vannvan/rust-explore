@@ -73,7 +73,8 @@ impl YCommand {
             skip: "".to_owned(),
         };
 
-        let json_string = serde_json::to_string(&user_cli_config).unwrap();
+        // 格式化json文件
+        let json_string = serde_json::to_string_pretty(&user_cli_config).unwrap();
 
         let f = File::new();
 
@@ -88,7 +89,7 @@ impl YCommand {
                 // if cfg!(debug_assertions) {
                 println!("{}", err);
                 // }
-                Log::error("文件生成失败");
+                Log::error("配置文件生成失败");
                 return Err(false);
             }
         }

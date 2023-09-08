@@ -18,9 +18,7 @@ use crate::{
     },
 };
 
-pub struct Scheduler {
-    //
-}
+pub struct Scheduler;
 impl Scheduler {
     pub async fn start() -> Result<(), &'static str> {
         let cookies = get_local_cookies();
@@ -28,15 +26,18 @@ impl Scheduler {
         if cookies.is_empty() {
             match Self::get_user_config() {
                 Ok(user_config) => {
-                    if let Ok(_resp) = Self::login_yuque_and_save_cookies(user_config).await {
-                        Log::success("登录成功!");
-                        // 接着就开始获取知识库
-                        if let Ok(_books_info) = YuqueApi::get_user_bookstacks().await {
-                            Log::success("获取知识库成功")
+                    match YuqueApi::login(user_config).await {
+                        Ok(_resp) => {
+                            Log::success("登录成功!");
+                            // 接着就开始获取知识库
+                            if let Ok(_books_info) = YuqueApi::get_user_bookstacks().await {
+                                Log::success("获取知识库成功")
+                            }
                         }
-                    } else {
-                        Log::error("登录失败");
-                        process::exit(1)
+                        Err(_err) => {
+                            Log::error("登录失败，请检查账号信息是否正确或重试");
+                            process::exit(1)
+                        }
                     }
                 }
                 Err(err) => Log::error(err),
@@ -68,14 +69,6 @@ impl Scheduler {
             }
         } else {
             Err("配置文件不存在")
-        }
-    }
-    /// 登录语雀并存储cookies
-    pub async fn login_yuque_and_save_cookies(user_config: UserCliConfig) -> Result<(), bool> {
-        if let Ok(_e) = YuqueApi::login(user_config).await {
-            Ok(())
-        } else {
-            Err(false)
         }
     }
 }

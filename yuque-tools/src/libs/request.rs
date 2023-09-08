@@ -87,8 +87,15 @@ impl Request {
             .send()
             .await?;
 
+        let res_status = res.status().as_u16();
+
+        // 暂时先只判断这一个
+        if res_status != 200 {
+            Log::error("授权失败");
+        }
+
         // 如果是登录，就存下cookies
-        if login_reg.unwrap().is_match(url) {
+        if login_reg.unwrap().is_match(url) && res_status == 200 {
             let mut vec = vec![];
             for item in res
                 .headers()
