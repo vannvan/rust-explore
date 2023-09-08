@@ -52,7 +52,7 @@ impl Request {
         let cookies = get_local_cookies();
 
         if cookies.is_empty() {
-            Log::error("cookies已过期，请清除缓存重新执行程序");
+            Log::error("cookies已过期，请清除缓存后重新执行程序");
             process::exit(1)
         }
 

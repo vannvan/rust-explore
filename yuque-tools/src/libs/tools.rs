@@ -1,7 +1,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::{constants::schema::LocalCookiesInfo, constants::GLOBAL_CONFIG, file::File};
-/// 生成时间戳
+/// 生成当前时间戳
 pub fn gen_timestamp() -> u128 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -9,7 +9,7 @@ pub fn gen_timestamp() -> u128 {
         .as_millis()
 }
 
-/// 获取本地有效cookies
+/// 获取本地有效cookies，如果cookies过期就返回空字符串
 pub fn get_local_cookies() -> String {
     let f = File::new();
     if let Ok(cookie_info) = f.read(&GLOBAL_CONFIG.cookies_file) {
