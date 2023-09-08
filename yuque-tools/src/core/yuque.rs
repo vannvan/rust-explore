@@ -9,11 +9,14 @@
 
 use serde_json::json;
 
-use crate::core::scheduler::UserConfig;
 use std::{collections::HashMap, process};
 
 use crate::libs::{
-    constants::GLOBAL_CONFIG, encrypt::encrypt_password, file::File, log::Log, request::Request,
+    constants::{schema::UserCliConfig, GLOBAL_CONFIG},
+    encrypt::encrypt_password,
+    file::File,
+    log::Log,
+    request::Request,
     tools::gen_timestamp,
 };
 #[derive(PartialEq, Eq, Hash)]
@@ -22,6 +25,7 @@ struct YuqueUser<'a> {
     pub name: &'a str,
 }
 // #[derive(PartialEq, Eq, Hash)]
+#[allow(dead_code)]
 struct BookInfo<'a> {
     pub name: &'a str,
     pub slug: &'a str,
@@ -34,12 +38,12 @@ pub struct YuqueApi;
 #[allow(dead_code)]
 impl YuqueApi {
     /// 登录语雀
-    pub async fn login(user_config: UserConfig) -> Result<bool, bool> {
+    pub async fn login(user_config: UserCliConfig) -> Result<bool, bool> {
         // println!("登录语雀:{:?}", user_config);
         let _password = encrypt_password(&user_config.password);
         let mut params = HashMap::new();
-        params.insert("login", user_config.username);
-        params.insert("password", _password);
+        params.insert("login", user_config.username.to_string());
+        params.insert("password", _password.to_string());
         params.insert("loginType", "password".to_string());
 
         if let Ok(resp) = Request::post(&GLOBAL_CONFIG.yuque_login, params).await {
@@ -93,9 +97,16 @@ impl YuqueApi {
                 }
                 // println!("{:?}", serde_json::to_string(&books).unwrap())
             } else {
+                if cfg!(debug_assertions) {
+                    println!("{:?}", resp.to_owned());
+                }
+                let mut error_info = String::from("获取知识库失败: ");
+                error_info.push_str(resp.get("message").unwrap().to_string().as_str());
+                Log::error(&error_info);
                 Err(false)
             }
         } else {
+            Log::error("获取知识库失败");
             Err(false)
         }
     }

@@ -42,14 +42,23 @@ impl Request {
 
     pub async fn get(url: &str) -> Result<HashMap<String, Value>, reqwest::Error> {
         let target_url = GLOBAL_CONFIG.yuque_host.clone() + &url;
-        println!("get请求,{}", &target_url);
+        if cfg!(debug_assertions) {
+            println!("GET-> {}", &target_url);
+        }
         // let res = reqwest::get(&target_url);
         // Ok(res.json::<HashMap<String, String>>().await?)
         let client = reqwest::Client::new();
 
+        let cookies = get_local_cookies();
+
+        if cookies.is_empty() {
+            Log::error("cookies已过期，请清除缓存重新执行程序");
+            process::exit(1)
+        }
+
         let res = client
             .get(target_url)
-            .header("cookie", get_local_cookies())
+            .header("cookie", cookies)
             .header("content-type", "application/json")
             .header("x-requested-with", "XMLHttpRequest")
             .send()
@@ -65,16 +74,18 @@ impl Request {
     ) -> Result<HashMap<String, Value>, reqwest::Error> {
         let client = reqwest::Client::new();
         let header = Self::request_header();
-
         let target_url = GLOBAL_CONFIG.yuque_host.clone() + &url;
+        let login_reg = Regex::new("login");
+        if cfg!(debug_assertions) {
+            println!("POST-> {}", &target_url);
+        }
+
         let res = client
             .post(target_url)
             .headers(header)
             .json(&params)
             .send()
             .await?;
-
-        let login_reg = Regex::new("login");
 
         // 如果是登录，就存下cookies
         if login_reg.unwrap().is_match(url) {

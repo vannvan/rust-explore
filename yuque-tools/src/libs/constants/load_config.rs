@@ -35,6 +35,8 @@ pub struct GlobalConfig {
     pub yuque_export_markdown: String,
     /// meta
     pub meta_dir: String,
+    /// 用户的cli配置
+    pub user_cli_config_file: String,
     /// 文档输出目录
     pub target_output_dir: String,
     /// cookies_file

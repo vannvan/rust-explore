@@ -7,6 +7,12 @@
  * Copyright (c) https://github.com/vannvan
  */
 
+use crate::libs::{
+    constants::{schema::UserCliConfig, GLOBAL_CONFIG},
+    file::File,
+    log::Log,
+};
+
 use super::scheduler::Scheduler;
 use clap::{Parser, Subcommand};
 
@@ -44,16 +50,71 @@ impl YCommand {
                 Ok(())
             }
             Commands::Clear => {
-                println!("清除缓存哈哈哈");
+                let _ = Self::clear_local_cache();
                 Ok(())
             }
             Commands::Init => {
-                println!("初始化配置");
+                let _ = Self::generate_cli_config();
                 Ok(())
             }
             Commands::Upgrade => {
                 println!("更新");
                 Ok(())
+            }
+        }
+    }
+
+    /// 生成一套配置
+    fn generate_cli_config() -> Result<bool, bool> {
+        let user_cli_config = UserCliConfig {
+            username: "".to_owned(),
+            password: "".to_owned(),
+            doc_range: "".to_owned(),
+            skip: "".to_owned(),
+        };
+
+        let json_string = serde_json::to_string(&user_cli_config).unwrap();
+
+        let f = File::new();
+
+        match f.write(&GLOBAL_CONFIG.user_cli_config_file, json_string) {
+            Ok(_) => {
+                let mut success_info = String::from("配置文件已初始化，见👉 ");
+                success_info.push_str(&GLOBAL_CONFIG.user_cli_config_file.to_string());
+                Log::info(&success_info);
+                return Ok(true);
+            }
+            Err(err) => {
+                // if cfg!(debug_assertions) {
+                println!("{}", err);
+                // }
+                Log::error("文件生成失败");
+                return Err(false);
+            }
+        }
+    }
+
+    /// 清除本地缓存
+    fn clear_local_cache() -> Result<bool, bool> {
+        let f = File::new();
+
+        match f.exists(&GLOBAL_CONFIG.meta_dir) {
+            true => match f.rmdir(&GLOBAL_CONFIG.meta_dir) {
+                Err(err) => {
+                    Log::error("清除失败");
+                    if cfg!(debug_assertions) {
+                        println!("{}", err);
+                    }
+                    Err(false)
+                }
+                Ok(_) => {
+                    Log::success("缓存已清除~");
+                    Ok(true)
+                }
+            },
+            false => {
+                Log::warn("暂无缓存");
+                Err(false)
             }
         }
     }
