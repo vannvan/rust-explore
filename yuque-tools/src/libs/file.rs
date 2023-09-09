@@ -79,7 +79,7 @@ impl File {
 
     /// 删除文件夹
     pub fn rmdir(&self, d: &str) -> Result<(), Error> {
-        fs::remove_dir(d)?;
+        fs::remove_dir_all(d)?;
 
         Ok(())
     }

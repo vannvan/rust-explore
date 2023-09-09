@@ -12,3 +12,5 @@ dist
 target
 
 yuque.config.json
+**/.meta/*
+**/docs/*

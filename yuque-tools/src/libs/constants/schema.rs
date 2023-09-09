@@ -7,10 +7,18 @@
  * Copyright (c) https://github.com/vannvan
  */
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
 pub struct LocalCookiesInfo {
     pub expire_time: u128,
     pub cookies: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UserCliConfig {
+    pub username: String,
+    pub password: String,
+    pub doc_range: String,
+    pub skip: String,
 }

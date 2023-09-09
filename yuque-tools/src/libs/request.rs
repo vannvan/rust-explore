@@ -1,5 +1,5 @@
 /*
- * Description:
+ * Description: 请求
  * Created: 2023-08-31 18:47:09
  * Author: vannvan
  * Email : adoerww@gmail.com
@@ -17,6 +17,7 @@ use std::{collections::HashMap, process};
 use crate::libs::{
     constants::GLOBAL_CONFIG,
     file::File,
+    log::Log,
     tools::{gen_timestamp, get_local_cookies},
 };
 
@@ -41,14 +42,23 @@ impl Request {
 
     pub async fn get(url: &str) -> Result<HashMap<String, Value>, reqwest::Error> {
         let target_url = GLOBAL_CONFIG.yuque_host.clone() + &url;
-        println!("get请求,{}", &target_url);
+        if cfg!(debug_assertions) {
+            println!("GET-> {}", &target_url);
+        }
         // let res = reqwest::get(&target_url);
         // Ok(res.json::<HashMap<String, String>>().await?)
         let client = reqwest::Client::new();
 
+        let cookies = get_local_cookies();
+
+        if cookies.is_empty() {
+            Log::error("cookies已过期，请清除缓存后重新执行程序");
+            process::exit(1)
+        }
+
         let res = client
             .get(target_url)
-            .header("cookie", get_local_cookies())
+            .header("cookie", cookies)
             .header("content-type", "application/json")
             .header("x-requested-with", "XMLHttpRequest")
             .send()
@@ -64,8 +74,12 @@ impl Request {
     ) -> Result<HashMap<String, Value>, reqwest::Error> {
         let client = reqwest::Client::new();
         let header = Self::request_header();
-
         let target_url = GLOBAL_CONFIG.yuque_host.clone() + &url;
+        let login_reg = Regex::new("login");
+        if cfg!(debug_assertions) {
+            println!("POST-> {}", &target_url);
+        }
+
         let res = client
             .post(target_url)
             .headers(header)
@@ -73,10 +87,15 @@ impl Request {
             .send()
             .await?;
 
-        let login_reg = Regex::new("login");
+        let res_status = res.status().as_u16();
+
+        // 暂时先只判断这一个
+        if res_status != 200 {
+            Log::error("授权失败");
+        }
 
         // 如果是登录，就存下cookies
-        if login_reg.unwrap().is_match(url) {
+        if login_reg.unwrap().is_match(url) && res_status == 200 {
             let mut vec = vec![];
             for item in res
                 .headers()
@@ -90,7 +109,7 @@ impl Request {
             let cookies = vec.join(";");
 
             let cookies_info = json!( {
-                "expire_time": gen_timestamp(),
+                "expire_time": gen_timestamp() + GLOBAL_CONFIG.local_expire,
                 "cookies": cookies
             });
 
@@ -99,7 +118,7 @@ impl Request {
             match f.mkdir(&GLOBAL_CONFIG.meta_dir) {
                 Ok(_) => match f.write(&GLOBAL_CONFIG.cookies_file, cookies_info.to_string()) {
                     Err(_) => {
-                        println!("文件创建失败");
+                        Log::error("文件创建失败");
                         process::exit(1)
                     }
                     Ok(_) => (),
