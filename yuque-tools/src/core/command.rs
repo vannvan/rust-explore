@@ -69,8 +69,8 @@ impl YCommand {
         let user_cli_config = UserCliConfig {
             username: "".to_owned(),
             password: "".to_owned(),
-            doc_range: "".to_owned(),
-            skip: "".to_owned(),
+            doc_range: [].to_vec(),
+            skip: true,
         };
 
         // 格式化json文件

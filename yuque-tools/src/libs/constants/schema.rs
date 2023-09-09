@@ -19,6 +19,6 @@ pub struct LocalCookiesInfo {
 pub struct UserCliConfig {
     pub username: String,
     pub password: String,
-    pub doc_range: String,
-    pub skip: String,
+    pub doc_range: Vec<String>,
+    pub skip: bool,
 }

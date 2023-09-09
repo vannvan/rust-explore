@@ -8,9 +8,10 @@
  */
 
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::fs;
+use serde_json::json;
+// use std::fs;
 
-const CONFIG_FILE_PATH: &str = "src/config/config.json";
+// const CONFIG_FILE_PATH: &str = "conf/config.json";
 
 fn parse_json<T: DeserializeOwned>(schema: &str) -> Option<T> {
     match serde_json::from_str(schema) {
@@ -48,12 +49,53 @@ pub struct GlobalConfig {
     /// 过期时间,1天
     pub local_expire: u128,
 }
+#[derive(Serialize, Deserialize, Debug)]
+struct Conf {
+    pub host: String,
+}
 
 /// 加载配置
 pub fn load_conf() -> GlobalConfig {
-    let config_file = fs::read_to_string(CONFIG_FILE_PATH).unwrap();
-    let parsed_json = parse_json::<GlobalConfig>(&config_file).unwrap();
+    // let config_file = fs::read_to_string(CONFIG_FILE_PATH).unwrap();
+    let config_file = json!({
+        "yuque_host": "https://www.yuque.com",
+        "yuque_referer": "https://www.yuque.com/login",
+        "yuque_login": "/api/accounts/login",
+        "yuque_book_stacks": "/api/mine/book_stacks",
+        "yuque_books_info": "",
+        "yuque_export_markdown": "",
+        "meta_dir": ".meta",
+        "target_output_dir": "./docs",
+        "user_cli_config_file": "yuque.config.json",
+        "cookies_file": ".meta/cookies.json",
+        "user_info_file": "./meta/user_info.json",
+        "books_info_file": ".meta/books_info.json",
+        "duration": 500,
+        "local_expire": 86400000
+    })
+    .to_string();
+
+    // let conf = GlobalConfig {
+    //     yuque_host: "https://www.yuque.com",
+    //     yuque_referer: "https://www.yuque.com/login",
+    //     yuque_login: "/api/accounts/login",
+    //     yuque_book_stacks: "/api/mine/book_stacks",
+    //     yuque_books_info: "",
+    //     yuque_export_markdown: "",
+    //     meta_dir: "",
+    //     user_cli_config_file: "yuque.config.json",
+    //     target_output_dir: "./docs",
+    //     cookies_file: ".meta/cookies.json",
+    //     user_info_file: "./meta/user_info.json",
+    //     books_info_file: ".meta/books_info.json",
+    //     local_expire: 86400000,
+    // };
+
+    // let parsed_json =
+    //     parse_json::<GlobalConfig>(&serde_json::to_string(&conf).unwrap().clone()).unwrap();
+    let parsed_json = parse_json::<GlobalConfig>(&config_file.to_string()).unwrap();
     parsed_json
+    // conf
 }
 
 #[test]
