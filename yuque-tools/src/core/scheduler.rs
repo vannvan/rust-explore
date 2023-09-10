@@ -46,7 +46,8 @@ impl Scheduler {
             // 有cookie，不走登录
             // println!("cookies-> {}", cookies);
             if let Ok(_books_info) = YuqueApi::get_user_bookstacks().await {
-                Log::success("获取知识库成功")
+                Log::success("获取知识库成功");
+                // print!("{:?}", serde_json::from_value(_books_info).unwrap())
             }
         }
         Ok(())

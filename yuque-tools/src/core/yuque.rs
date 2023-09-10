@@ -7,7 +7,7 @@
  * Copyright (c) https://github.com/vannvan
  */
 
-use serde_json::json;
+use serde_json::{json, Value};
 
 use std::{collections::HashMap, process};
 
@@ -19,6 +19,13 @@ use crate::libs::{
     request::Request,
     tools::gen_timestamp,
 };
+
+extern crate flexbuffers;
+extern crate spider;
+
+use spider::serde::ser::Serialize;
+use spider::website::Website;
+
 #[derive(PartialEq, Eq, Hash)]
 struct YuqueUser<'a> {
     pub login: &'a str,
@@ -58,7 +65,7 @@ impl YuqueApi {
     }
 
     /// 获取知识库列表数据
-    pub async fn get_user_bookstacks() -> Result<bool, bool> {
+    pub async fn get_user_bookstacks() -> Result<Value, bool> {
         Log::info("开始获取知识库");
         if let Ok(resp) = Request::get(&GLOBAL_CONFIG.yuque_book_stacks).await {
             if resp.get("data").is_some() {
@@ -71,6 +78,7 @@ impl YuqueApi {
                           "name": sub_item.get("name"),
                           "slug": sub_item.get("slug"),
                           "stack_id": sub_item.get("stack_id"),
+                          "book_id": sub_item.get("id"),
                           "user": {
                             "name": sub_item.get("user").unwrap().get("name"),
                             "login": sub_item.get("user").unwrap().get("login")
@@ -88,13 +96,18 @@ impl YuqueApi {
                     "booksInfo": books_data
                 });
 
+                // for item in books_data {
+                //     println!("{}", item)
+                // }
+                Self::get_book_docs_info(&"ss").await;
+
                 // 写入知识库信息文件
                 match f.write(&GLOBAL_CONFIG.books_info_file, books_info.to_string()) {
                     Err(_) => {
                         Log::error("文件创建失败");
                         process::exit(1)
                     }
-                    Ok(_) => Ok(true),
+                    Ok(_) => Ok(books_info),
                 }
                 // println!("{:?}", serde_json::to_string(&books).unwrap())
             } else {
@@ -113,12 +126,30 @@ impl YuqueApi {
     }
 
     /// 获取知识库下文档数据
-    pub async fn get_book_docs_info() {
-        //
+    pub async fn get_book_docs_info(repo: &str) {
+        println!("----{}", repo);
+        let mut website: Website = Website::new("https://rsseau.fr");
+
+        website.crawl().await;
+
+        let links = website.get_links();
+
+        let mut s = flexbuffers::FlexbufferSerializer::new();
+
+        links.serialize(&mut s).unwrap();
+
+        println!("{:?}", s)
     }
 
     /// 通过下载接口获取到md文件内容
     pub async fn get_markdown_content() {
         //
     }
+}
+
+#[test]
+fn test_get_book_doc_info() {
+    let repo = String::from("tools");
+
+    YuqueApi::get_book_docs_info(&repo);
 }

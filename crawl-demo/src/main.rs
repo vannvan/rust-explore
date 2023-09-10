@@ -56,7 +56,11 @@ async fn get_html() -> Result<(), reqwest::Error> {
     Ok(())
 }
 
-// async fn get_window() -> Result<(), reqwest::Error> {
-//     let url = "https://ssr1.scrape.center/";
-//     let resp = reqwest::get(url).await?;
-// }
+async fn get_window() {
+    let response = reqwest::get("https://meitulu.me/item/4756.html")
+        .unwrap()
+        .text()
+        .unwrap();
+
+    let document = scraper::Html::parse_document(&response);
+}
