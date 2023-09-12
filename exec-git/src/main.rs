@@ -1,5 +1,4 @@
-use std::io::{BufRead, BufReader};
-use std::process::{self, Command, Stdio};
+use std::process::Command;
 fn main() {
     let pull = Command::new("git")
         .arg("pull")
@@ -25,4 +24,10 @@ fn main() {
         .output()
         .expect("commit执行异常，提示");
     println!("{}", String::from_utf8(commit.stdout).unwrap());
+
+    let push = Command::new("git")
+        .arg("push")
+        .output()
+        .expect("push执行异常，提示");
+    println!("{}", String::from_utf8(push.stdout).unwrap());
 }
