@@ -48,6 +48,7 @@
     }
   ],
   "psi-header.changes-tracking": {
+    "include": ["rust"], // 只在rust文件自动创建
     "autoHeader": "autoSave" // 新增文件时自动创建
   }
 }
