@@ -63,7 +63,8 @@ impl Scheduler {
                 Ok(mut f) => {
                     let mut data = String::new();
                     f.read_to_string(&mut data).expect("配置文件读取失败");
-                    let config: UserCliConfig = serde_json::from_str(&data).expect("JSON解析失败");
+                    let config: UserCliConfig =
+                        serde_json::from_str(&data).expect("配置文件解析失败，请检查字段是否完整");
                     Ok(config)
                 }
                 Err(_) => Err("配置文件读取失败"),

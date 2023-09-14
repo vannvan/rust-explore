@@ -64,7 +64,6 @@ impl Request {
             .send()
             .await?;
 
-        // println!("----{}", res.text().await?);
         Ok(res.json::<HashMap<String, Value>>().await?)
     }
 

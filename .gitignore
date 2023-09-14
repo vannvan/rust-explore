@@ -14,3 +14,4 @@ target
 yuque.config.json
 **/.meta/*
 **/docs/*
+.idea

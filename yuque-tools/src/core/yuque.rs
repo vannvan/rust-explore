@@ -7,6 +7,7 @@
  * Copyright (c) https://github.com/vannvan
  */
 
+use regex::Regex;
 use serde_json::{json, Value};
 
 use std::{collections::HashMap, process};
@@ -17,14 +18,11 @@ use crate::libs::{
     file::File,
     log::Log,
     request::Request,
-    tools::gen_timestamp,
+    tools::{gen_timestamp, get_local_cookies},
 };
+use url::form_urlencoded::parse;
 
 extern crate flexbuffers;
-extern crate spider;
-
-use spider::serde::ser::Serialize;
-use spider::website::Website;
 
 #[derive(PartialEq, Eq, Hash)]
 struct YuqueUser<'a> {
@@ -79,6 +77,7 @@ impl YuqueApi {
                           "slug": sub_item.get("slug"),
                           "stack_id": sub_item.get("stack_id"),
                           "book_id": sub_item.get("id"),
+                          "user_login": sub_item.get("user").unwrap().get("login"),
                           "user": {
                             "name": sub_item.get("user").unwrap().get("name"),
                             "login": sub_item.get("user").unwrap().get("login")
@@ -96,10 +95,10 @@ impl YuqueApi {
                     "booksInfo": books_data
                 });
 
-                // for item in books_data {
-                //     println!("{}", item)
-                // }
-                Self::get_book_docs_info(&"ss").await;
+                for item in books_data {
+                    // println!("{}", &item.get("slug") + &item.get("user_login"))
+                    // Self::get_book_docs_info(&"/vannvan/dd67e4").await;
+                }
 
                 // 写入知识库信息文件
                 match f.write(&GLOBAL_CONFIG.books_info_file, books_info.to_string()) {
@@ -112,7 +111,7 @@ impl YuqueApi {
                 // println!("{:?}", serde_json::to_string(&books).unwrap())
             } else {
                 if cfg!(debug_assertions) {
-                    println!("{:?}", resp.to_owned());
+                    println!("获取知识库响应信息：{:?}", resp.to_owned());
                 }
                 let mut error_info = String::from("获取知识库失败: ");
                 error_info.push_str(resp.get("message").unwrap().to_string().as_str());
@@ -127,29 +126,69 @@ impl YuqueApi {
 
     /// 获取知识库下文档数据
     pub async fn get_book_docs_info(repo: &str) {
-        println!("----{}", repo);
-        let mut website: Website = Website::new("https://rsseau.fr");
+        match Self::crawl_book_toc_info(repo).await {
+            Ok(resp) => {
+                println!("响应内容：{}", resp)
+            }
+            Err(_err) => {
+                //
+            }
+        };
+    }
 
-        website.crawl().await;
+    async fn crawl_book_toc_info(url: &str) -> Result<String, reqwest::Error> {
+        let target_url = GLOBAL_CONFIG.yuque_host.clone() + &url;
+        if cfg!(debug_assertions) {
+            println!("GET-> {}", &target_url);
+        }
+        let client = reqwest::Client::new();
 
-        let links = website.get_links();
+        let cookies = get_local_cookies();
 
-        let mut s = flexbuffers::FlexbufferSerializer::new();
+        if cookies.is_empty() {
+            Log::error("cookies已过期，请清除缓存后重新执行程序");
+            process::exit(1)
+        }
 
-        links.serialize(&mut s).unwrap();
+        let res = client
+            .get(target_url)
+            .header("cookie", cookies)
+            .header("content-type", "application/json")
+            .header("x-requested-with", "XMLHttpRequest")
+            .send()
+            .await?;
 
-        println!("{:?}", s)
+        let res_text = res.text().await?;
+
+        let reg = Regex::new(r#"decodeURIComponent.*""#).unwrap();
+        if let Some(captures) = reg.captures(&res_text.to_string()) {
+            let re = Regex::new(r#"".*""#).unwrap();
+            let caps = re.captures(captures.get(0).unwrap().as_str());
+            let decoded: String = parse(
+                caps.unwrap()
+                    .get(0)
+                    .unwrap()
+                    .to_owned()
+                    .as_str()
+                    .replace(r#"""#, "")
+                    .as_bytes(),
+            )
+            .map(|(key, val)| [key, val].concat())
+            .collect();
+
+            let parsed: Value = serde_json::from_str(&decoded).unwrap();
+
+            println!("{:?}", parsed["book"]["toc"])
+        } else {
+            println!("No match found");
+        }
+
+        Ok((&"").to_string())
     }
 
     /// 通过下载接口获取到md文件内容
-    pub async fn get_markdown_content() {
-        //
+    pub async fn get_markdown_content(url: &str) -> Result<String, reqwest::Error> {
+        println!("{}", url);
+        Ok("()".to_string())
     }
-}
-
-#[test]
-fn test_get_book_doc_info() {
-    let repo = String::from("tools");
-
-    YuqueApi::get_book_docs_info(&repo);
 }
