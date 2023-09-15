@@ -47,10 +47,12 @@ impl Scheduler {
         } else {
             // 有cookie，不走登录
             // println!("cookies-> {}", cookies);
+            // TODO
             // 先去获取本地缓存的知识库，如果在半小时之内，就不用重复获取了
             match get_cache_books_info() {
                 Ok(_books_info) => {
-                    let _ = Self::inquiry_user();
+                    let sss = Self::inquiry_user();
+                    println!("{:?}", sss.books)
                 }
                 Err(_) => {
                     if let Ok(_books_info) = YuqueApi::get_user_bookstacks().await {
@@ -65,7 +67,7 @@ impl Scheduler {
     }
 
     /// 询问
-    fn inquiry_user() -> Result<String, &'static str> {
+    fn inquiry_user() -> MutualAnswer<&'static str> {
         let mut answer = MutualAnswer {
             books: [].to_vec(),
             skip: true,
@@ -92,7 +94,7 @@ impl Scheduler {
                         .prompt();
 
                 match books_ans {
-                    Ok(choice) => answer.books = choice,
+                    Ok(choice) => answer.books = choice.clone(),
                     Err(_) => println!("选择出错，请重新尝试"),
                 }
 
@@ -124,14 +126,15 @@ impl Scheduler {
                     answer.books, answer.skip, answer.line_break
                 );
 
-                Ok("()".to_string())
+                // answer
             }
             Err(_) => {
                 Log::error("知识库文件读取失败,退出程序");
-                process::exit(1)
+                // answer
+                process::exit(1);
             }
         }
-
+        answer
         // let book_info = serde_json::
     }
 }
