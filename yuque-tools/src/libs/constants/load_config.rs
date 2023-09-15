@@ -68,7 +68,7 @@ pub fn load_conf() -> GlobalConfig {
         "target_output_dir": "./docs",
         "user_cli_config_file": "yuque.config.json",
         "cookies_file": ".meta/cookies.json",
-        "user_info_file": "./meta/user_info.json",
+        "user_info_file": ".meta/user_info.json",
         "books_info_file": ".meta/books_info.json",
         "duration": 500,
         "local_expire": 86400000

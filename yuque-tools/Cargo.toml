@@ -20,3 +20,4 @@ lazy_static = "1.0"
 spider = '1.38.3'
 flexbuffers = "2.0.0"
 url = "2.0"
+inquire = "0.6"

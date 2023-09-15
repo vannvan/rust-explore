@@ -18,7 +18,7 @@ use clap::{Parser, Subcommand};
 
 #[derive(Debug, Parser)] // requires `derive` feature
 #[command(name = "ytool")]
-#[command(about = "语雀知识库CLI工具", long_about = None)]
+#[command(about = "语雀知识库内容批量导出工具", long_about = None)]
 pub struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -102,7 +102,7 @@ impl YCommand {
         match f.exists(&GLOBAL_CONFIG.meta_dir) {
             true => match f.rmdir(&GLOBAL_CONFIG.meta_dir) {
                 Err(err) => {
-                    Log::error("清除失败");
+                    Log::error("缓存清除失败");
                     if cfg!(debug_assertions) {
                         println!("{}", err);
                     }

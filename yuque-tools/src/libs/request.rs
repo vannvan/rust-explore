@@ -117,7 +117,7 @@ impl Request {
             match f.mkdir(&GLOBAL_CONFIG.meta_dir) {
                 Ok(_) => match f.write(&GLOBAL_CONFIG.cookies_file, cookies_info.to_string()) {
                     Err(_) => {
-                        Log::error("文件创建失败");
+                        Log::error("缓存目录创建失败");
                         process::exit(1)
                     }
                     Ok(_) => (),
