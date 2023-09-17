@@ -118,23 +118,13 @@ impl YuqueApi {
                 let f = File::new();
 
                 for item in &mut books_data {
-                    // url.push_str(&String::from("/"));
-                    let url = format!(
-                        "{}{}{}{}",
-                        String::from("/"),
-                        String::from(item["user_login"].as_str().unwrap()),
-                        String::from("/"),
-                        String::from(item["slug"].as_str().unwrap())
-                    );
-                    // println!("{}", url);
+                    let user_login = item["user_login"].as_str().unwrap_or_default();
+                    let slug = item["slug"].as_str().unwrap_or_default();
+                    let url = format!("/{}/{}", user_login, slug);
                     let ss = Self::get_book_docs_info(&url).await;
 
-                    match ss {
-                        Ok(book_toc) => {
-                            // println!("{}", book_toc);
-                            item["docs"] = book_toc
-                        }
-                        Err(_) => (),
+                    if let Ok(book_toc) = ss {
+                        item["docs"] = book_toc;
                     }
                 }
 
@@ -177,6 +167,7 @@ impl YuqueApi {
         }
     }
 
+    /// 爬取知识库
     async fn crawl_book_toc_info(url: &str) -> Result<Value, reqwest::Error> {
         let target_url = GLOBAL_CONFIG.yuque_host.clone() + &url;
         if cfg!(debug_assertions) {
@@ -201,30 +192,46 @@ impl YuqueApi {
 
         let res_text = res.text().await?;
 
-        let reg = Regex::new(r#"decodeURIComponent.*""#).unwrap();
-        if let Some(captures) = reg.captures(&res_text.to_string()) {
-            let re = Regex::new(r#"".*""#).unwrap();
-            let caps = re.captures(captures.get(0).unwrap().as_str());
-            let decoded: String = parse(
-                caps.unwrap()
-                    .get(0)
-                    .unwrap()
-                    .to_owned()
-                    .as_str()
-                    .replace(r#"""#, "")
-                    .as_bytes(),
-            )
-            .map(|(key, val)| [key, val].concat())
-            .collect();
+        // let reg = Regex::new(r#"decodeURIComponent.*""#).unwrap();
+        // Regex::new(r#"decodeURIComponent\("([^"]+)"\)"#).unwrap()
+        // if let Some(captures) = reg.captures(&res_text.to_string()) {
+        //     let re = Regex::new(r#"".*""#).unwrap();
+        //     let caps = re.captures(captures.get(0).unwrap().as_str());
+        // let decoded: String = parse(
+        //     caps.unwrap()
+        //         .get(0)
+        //         .unwrap()
+        //         .to_owned()
+        //         .as_str()
+        //         .replace(r#"""#, "")
+        //         .as_bytes(),
+        // )
+        //     .map(|(key, val)| [key, val].concat())
+        //     .collect();
 
-            let parsed: Value = serde_json::from_str(&decoded).unwrap();
+        //     let parsed: Value = serde_json::from_str(&decoded).unwrap();
 
-            // println!("{:?}", parsed["book"]["toc"])
-            // let sssss = parsed["book"]["toc"];
-            return Ok(parsed);
+        //     // println!("{:?}", parsed["book"]["toc"])
+        //     // let sssss = parsed["book"]["toc"];
+        //     return Ok(parsed);
+        // } else {
+        //     println!("No match found");
+        //     return Ok(Value::String("".to_owned()));
+        // }
+        // 优化
+        let reg = Regex::new(r#"decodeURIComponent\("([^"]+)"\)"#).unwrap();
+        if let Some(captured) = reg.captures(&res_text.to_string()) {
+            let decoded = &captured[1];
+
+            let decoded1: String = parse(decoded.as_bytes())
+                .map(|(key, val)| [key, val].concat())
+                .collect();
+            let parsed: Value = serde_json::from_str(&decoded1).unwrap();
+            // println!("Decoded value: {}", decoded);
+            Ok(parsed)
         } else {
             println!("No match found");
-            return Ok(Value::String("".to_owned()));
+            return Ok(Value::String("{}".to_owned()));
         }
     }
 
@@ -268,6 +275,18 @@ mod tests {
             Err(err) => {
                 println!("{:?}", err)
             }
+        }
+    }
+    #[test]
+    fn reg() {
+        let input = r#"window.appData = JSON.parse(decodeURIComponent("%7B%22me%22%3A%7B%22PERMISSION%22%3A"))"#;
+
+        let re = Regex::new(r#"decodeURIComponent\("([^"]+)"\)"#).unwrap();
+        if let Some(captured) = re.captures(input) {
+            let decoded = &captured[1];
+            println!("Decoded value: {}", decoded);
+        } else {
+            println!("No match found");
         }
     }
 }

@@ -67,15 +67,15 @@ impl Scheduler {
     }
 
     /// 询问
-    fn inquiry_user() -> MutualAnswer<&'static str> {
+    fn inquiry_user() -> MutualAnswer {
         let mut answer = MutualAnswer {
-            books: [].to_vec(),
+            books: vec![],
             skip: true,
             line_break: true,
         };
 
         match get_cache_books_info() {
-            Ok(mut books_info) => {
+            Ok(books_info) => {
                 if cfg!(debug_assertions) {
                     println!("知识库信息：{:?}", books_info);
                 }
@@ -83,7 +83,7 @@ impl Scheduler {
                 // 询问知识库
                 let mut options: Vec<&str> = vec![];
 
-                for item in &mut books_info {
+                for item in &books_info {
                     options.push(&item.name)
                 }
 
@@ -92,10 +92,10 @@ impl Scheduler {
                     MultiSelect::new("请选择知识库", options)
                         .with_help_message("空格选中，⬆ ⬇ 键移动选择")
                         .prompt();
-
+                // 因为choice是 Vec<&str> 类型，所以要转换一下
                 match books_ans {
-                    Ok(choice) => answer.books = choice.clone(),
-                    Err(_) => println!("选择出错，请重新尝试"),
+                    Ok(choice) => answer.books = choice.iter().map(|s| s.to_string()).collect(),
+                    Err(_) => panic!("选择出错，请重新尝试"),
                 }
 
                 // 确认是否跳过本地文件
@@ -106,7 +106,7 @@ impl Scheduler {
                 match skip_ans {
                     Ok(true) => answer.skip = true,
                     Ok(false) => answer.skip = false,
-                    Err(_) => println!("选择出错，请重新尝试"),
+                    Err(_) => panic!("选择出错，请重新尝试"),
                 }
 
                 // 确认是否保留语雀换行标识
@@ -118,7 +118,7 @@ impl Scheduler {
                 match lb_ans {
                     Ok(true) => answer.line_break = true,
                     Ok(false) => answer.line_break = false,
-                    Err(_) => println!("选择出错，请重新尝试"),
+                    Err(_) => panic!("选择出错，请重新尝试"),
                 }
 
                 println!(
@@ -135,6 +135,5 @@ impl Scheduler {
             }
         }
         answer
-        // let book_info = serde_json::
     }
 }

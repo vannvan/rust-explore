@@ -9,7 +9,7 @@
 
 // use config::Config;
 use regex::Regex;
-use reqwest::header::HeaderMap;
+use reqwest::{header::HeaderMap, Response};
 
 use serde_json::{json, Value};
 use std::{collections::HashMap, process};
@@ -95,37 +95,41 @@ impl Request {
 
         // 如果是登录，就存下cookies
         if login_reg.unwrap().is_match(url) && res_status == 200 {
-            let mut vec = vec![];
-            for item in res
-                .headers()
-                .iter()
-                .filter(|x| x.0 == "set-cookie")
-                .map(|s| s.1.to_str())
-            {
-                vec.push(item.unwrap())
-            }
-
-            let cookies = vec.join(";");
-
-            let cookies_info = json!( {
-                "expire_time": gen_timestamp() + GLOBAL_CONFIG.local_expire,
-                "cookies": cookies
-            });
-
-            let f = File::new();
-
-            match f.mkdir(&GLOBAL_CONFIG.meta_dir) {
-                Ok(_) => match f.write(&GLOBAL_CONFIG.cookies_file, cookies_info.to_string()) {
-                    Err(_) => {
-                        Log::error("缓存目录创建失败");
-                        process::exit(1)
-                    }
-                    Ok(_) => (),
-                },
-                Err(_) => process::exit(1),
-            }
+            Self::save_cookies(&res)
         }
 
         Ok(res.json::<HashMap<String, Value>>().await?)
+    }
+
+    fn save_cookies(res: &Response) {
+        let cookies: String = res
+            .headers()
+            .iter()
+            .filter_map(|(key, value)| {
+                if key.to_string().to_lowercase() == "set-cookie" {
+                    value.to_str().ok()
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<&str>>()
+            .join(";");
+
+        let cookies_info = json!({
+            "expire_time": gen_timestamp() + GLOBAL_CONFIG.local_expire,
+            "cookies": cookies,
+        });
+
+        let f = File::new();
+
+        if let Err(_) = f.mkdir(&GLOBAL_CONFIG.meta_dir) {
+            Log::error("缓存目录创建失败");
+            process::exit(1)
+        }
+
+        if let Err(_) = f.write(&GLOBAL_CONFIG.cookies_file, cookies_info.to_string()) {
+            Log::error("缓存暂存失败");
+            process::exit(1);
+        }
     }
 }

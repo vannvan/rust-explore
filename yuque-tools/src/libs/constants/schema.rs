@@ -40,8 +40,8 @@ pub struct UserCliConfig {
 
 #[derive(Serialize, Deserialize, Debug)]
 /// 交互信息
-pub struct MutualAnswer<T> {
-    pub books: Vec<T>,
+pub struct MutualAnswer {
+    pub books: Vec<String>,
     /// 是否跳过本地文件
     pub skip: bool,
     /// 是否保留换行标识
