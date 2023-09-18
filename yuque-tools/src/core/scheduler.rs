@@ -12,7 +12,7 @@ use std::process;
 use crate::{
     core::yuque::YuqueApi,
     libs::{
-        constants::schema::MutualAnswer,
+        constants::schema::{DocItem, MutualAnswer, TreeNone},
         log::Log,
         tools::{get_cache_books_info, get_local_cookies, get_user_config},
     },
@@ -32,8 +32,8 @@ impl Scheduler {
                             Log::success("登录成功!");
                             // 接着就开始获取知识库
                             if let Ok(_books_info) = YuqueApi::get_user_bookstacks().await {
-                                Log::success("获取知识库成功")
-                                // TODO 进入询问环节
+                                Log::success("获取知识库成功");
+                                Self::handle_inquiry()
                             }
                         }
                         Err(_err) => {
@@ -46,30 +46,34 @@ impl Scheduler {
             }
         } else {
             // 有cookie，不走登录
-            // println!("cookies-> {}", cookies);
-            // TODO
-            // 先去获取本地缓存的知识库，如果在半小时之内，就不用重复获取了
-            match get_cache_books_info() {
-                Ok(_books_info) => {
-                    let sss = Self::inquiry_user();
-                    println!("{:?}", sss.books)
-                }
-                Err(_) => {
-                    if let Ok(_books_info) = YuqueApi::get_user_bookstacks().await {
-                        Log::success("获取知识库成功");
-                        let _ = Self::inquiry_user();
-                        // print!("{:?}", serde_json::from_value(_books_info).unwrap())
-                    }
+            let books_info = get_cache_books_info();
+            if books_info.is_ok() {
+                Self::handle_inquiry()
+            } else {
+                if let Ok(_books_info) = YuqueApi::get_user_bookstacks().await {
+                    Log::success("获取知识库成功");
+                    Self::handle_inquiry()
                 }
             }
         }
         Ok(())
     }
 
+    /// 执行询问程序
+    fn handle_inquiry() {
+        let answer = Self::inquiry_user();
+        if answer.toc_range.len() > 0 {
+            Self::download_markdown_task(answer)
+        } else {
+            Log::error("未选择知识库，程序退出");
+            process::exit(1)
+        }
+    }
+
     /// 询问
     fn inquiry_user() -> MutualAnswer {
         let mut answer = MutualAnswer {
-            books: vec![],
+            toc_range: vec![],
             skip: true,
             line_break: true,
         };
@@ -77,7 +81,7 @@ impl Scheduler {
         match get_cache_books_info() {
             Ok(books_info) => {
                 if cfg!(debug_assertions) {
-                    println!("知识库信息：{:?}", books_info);
+                    // println!("知识库信息：{:?}", books_info);
                 }
 
                 // 询问知识库
@@ -90,11 +94,11 @@ impl Scheduler {
                 // 选择知识库
                 let books_ans: Result<Vec<&str>, InquireError> =
                     MultiSelect::new("请选择知识库", options)
-                        .with_help_message("空格选中，⬆ ⬇ 键移动选择")
+                        .with_help_message("空格选中/取消选中，⬆ ⬇ 键移动选择")
                         .prompt();
                 // 因为choice是 Vec<&str> 类型，所以要转换一下
                 match books_ans {
-                    Ok(choice) => answer.books = choice.iter().map(|s| s.to_string()).collect(),
+                    Ok(choice) => answer.toc_range = choice.iter().map(|s| s.to_string()).collect(),
                     Err(_) => panic!("选择出错，请重新尝试"),
                 }
 
@@ -123,17 +127,109 @@ impl Scheduler {
 
                 println!(
                     "将按以下配置进行导出：\n  知识库：{:?}\n  跳过本地：{}\n  保留换行：{}",
-                    answer.books, answer.skip, answer.line_break
+                    answer.toc_range, answer.skip, answer.line_break
                 );
-
-                // answer
             }
             Err(_) => {
                 Log::error("知识库文件读取失败,退出程序");
-                // answer
                 process::exit(1);
             }
         }
         answer
+    }
+
+    /// 下载markdown
+    fn download_markdown_task(answer: MutualAnswer) {
+        if cfg!(debug_assertions) {
+            println!("download_markdown_task 执行")
+        }
+        let MutualAnswer {
+            toc_range,
+            skip,
+            line_break,
+        } = answer;
+        println!("{},{},{:?}", skip, line_break, toc_range);
+
+        //
+
+        Self::mkdir_for_toc_tree(toc_range)
+    }
+    /// 生成与知识库结构相同的树形目录
+    fn mkdir_for_toc_tree(target_toc_range: Vec<String>) {
+        let cached_toc_info = get_cache_books_info();
+        if cached_toc_info.is_err() {
+            panic!("知识库信息读取失败，程序退出");
+        } else {
+            let mut cached_toc_info = cached_toc_info.unwrap();
+
+            let nodes: Vec<TreeNone> = cached_toc_info
+                .iter_mut()
+                .filter(|s| target_toc_range.contains(&s.name))
+                .map(|item| {
+                    let children = item
+                        .docs
+                        .iter()
+                        .map(|child| TreeNone {
+                            parent_id: "".to_string(),
+                            uuid: child.uuid.clone(),
+                            full_path: child.title.to_string(),
+                            children: vec![],
+                            // name: child.title.clone(),
+                        })
+                        .collect();
+                    TreeNone {
+                        parent_id: "".to_string(),
+                        uuid: "".to_string(),
+                        full_path: item.name.to_string(),
+                        children: children,
+                        // name: item.name.clone(),
+                    }
+                })
+                .collect();
+
+            // println!("{:?}", nodes)
+
+            for node in nodes.iter() {
+                Self::mk_tree_toc_dir(&nodes, "", node);
+            }
+        }
+    }
+
+    fn mk_tree_toc_dir(items: &Vec<TreeNone>, uuid: &str, p_item: &TreeNone) -> Vec<TreeNone> {
+        // println!("{:?}", items);
+        // println!("{:?}", p_item);
+
+        items
+            .iter()
+            .filter(|item| item.parent_id == uuid)
+            .map(|item| {
+                let full_path = format!("{}/{}", p_item.full_path, item.full_path);
+                println!("名称-> {}", full_path);
+                let new_p = TreeNone {
+                    parent_id: p_item.uuid.to_string(),
+                    uuid: item.uuid.to_string(),
+                    full_path: "".to_string(),
+                    children: vec![],
+                };
+                let new_p_item = TreeNone {
+                    parent_id: p_item.uuid.to_string(),
+                    uuid: "".to_string(),
+                    full_path: full_path.to_string(),
+                    children: Self::mk_tree_toc_dir(items, &item.uuid, &new_p),
+                };
+
+                new_p_item
+            })
+            .collect()
+    }
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test() {
+        //
     }
 }

@@ -55,6 +55,7 @@ pub fn get_user_config() -> Result<UserCliConfig, &'static str> {
 }
 
 /// 获取本地缓存的知识库信息，如果已过期就返回false
+/// TODO 先去获取本地缓存的知识库，如果在半小时之内，就不用重复获取了
 pub fn get_cache_books_info() -> Result<Vec<BookItem>, bool> {
     let user_cli_config = &GLOBAL_CONFIG.books_info_file;
     if Path::new(&user_cli_config).exists() {

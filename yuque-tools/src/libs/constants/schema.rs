@@ -17,10 +17,23 @@ pub struct LocalCookiesInfo {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct DocItem {
+    pub title: String,
+    #[serde(rename = "type")]
+    node_type: String,
+    pub uuid: String,
+    pub child_uuid: String,
+    pub parent_uuid: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
+
 /// 知识库项目
 pub struct BookItem {
     pub name: String,
     pub slug: String,
+    pub docs: Vec<DocItem>,
+    pub user_login: String,
+    pub book_type: String,
 }
 #[derive(Serialize, Deserialize, Debug)]
 /// 缓存知识库信息
@@ -34,16 +47,28 @@ pub struct BookInfo {
 pub struct UserCliConfig {
     pub username: String,
     pub password: String,
-    pub doc_range: Vec<String>,
+    pub toc_range: Vec<String>,
     pub skip: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 /// 交互信息
 pub struct MutualAnswer {
-    pub books: Vec<String>,
+    pub toc_range: Vec<String>,
     /// 是否跳过本地文件
     pub skip: bool,
     /// 是否保留换行标识
     pub line_break: bool,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct TreeNone {
+    pub parent_id: String,
+    pub uuid: String,
+    // pub title: String,
+    pub full_path: String,
+    // pub p_slug: String,
+    #[serde(rename = "type")]
+    pub children: Vec<TreeNone>,
+    // pub name: String,
 }

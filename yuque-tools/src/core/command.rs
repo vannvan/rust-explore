@@ -69,7 +69,7 @@ impl YCommand {
         let user_cli_config = UserCliConfig {
             username: "".to_owned(),
             password: "".to_owned(),
-            doc_range: [].to_vec(),
+            toc_range: [].to_vec(),
             skip: true,
         };
 
