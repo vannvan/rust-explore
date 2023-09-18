@@ -12,7 +12,11 @@ use std::process;
 use crate::{
     core::yuque::YuqueApi,
     libs::{
-        constants::schema::{DocItem, MutualAnswer, TreeNone},
+        constants::{
+            schema::{MutualAnswer, TreeNone},
+            GLOBAL_CONFIG,
+        },
+        file::File,
         log::Log,
         tools::{get_cache_books_info, get_local_cookies, get_user_config},
     },
@@ -23,7 +27,7 @@ pub struct Scheduler;
 impl Scheduler {
     pub async fn start() -> Result<(), &'static str> {
         let cookies = get_local_cookies();
-
+        // 没有cookie缓存，进入登录环节
         if cookies.is_empty() {
             match get_user_config() {
                 Ok(user_config) => {
@@ -164,61 +168,70 @@ impl Scheduler {
 
             let nodes: Vec<TreeNone> = cached_toc_info
                 .iter_mut()
-                .filter(|s| target_toc_range.contains(&s.name))
-                .map(|item| {
-                    let children = item
-                        .docs
-                        .iter()
-                        .map(|child| TreeNone {
+                .filter_map(|item| {
+                    if target_toc_range.contains(&item.name) {
+                        let children = item
+                            .docs
+                            .iter()
+                            .map(|child| TreeNone {
+                                parent_id: child.parent_uuid.to_string(),
+                                uuid: child.uuid.clone(),
+                                full_path: child.title.to_string(),
+                                children: vec![],
+                                name: "".to_string(), // 文档级别没有name
+                                title: child.title.to_string(),
+                            })
+                            .collect();
+
+                        Some(TreeNone {
                             parent_id: "".to_string(),
-                            uuid: child.uuid.clone(),
-                            full_path: child.title.to_string(),
-                            children: vec![],
-                            // name: child.title.clone(),
+                            uuid: "".to_string(),
+                            full_path: "".to_string(),
+                            name: item.name.clone(),
+                            title: "".to_string(), // 知识库级别没有标题
+                            children,
                         })
-                        .collect();
-                    TreeNone {
-                        parent_id: "".to_string(),
-                        uuid: "".to_string(),
-                        full_path: item.name.to_string(),
-                        children: children,
-                        // name: item.name.clone(),
+                    } else {
+                        None
                     }
                 })
                 .collect();
 
-            // println!("{:?}", nodes)
-
             for node in nodes.iter() {
-                Self::mk_tree_toc_dir(&nodes, "", node);
+                Self::mk_tree_toc_dir(&node.children, "", node.name.to_owned());
             }
         }
     }
 
-    fn mk_tree_toc_dir(items: &Vec<TreeNone>, uuid: &str, p_item: &TreeNone) -> Vec<TreeNone> {
-        // println!("{:?}", items);
-        // println!("{:?}", p_item);
-
+    fn mk_tree_toc_dir(items: &Vec<TreeNone>, uuid: &str, prev_path: String) -> Vec<TreeNone> {
+        let f = File::new();
         items
             .iter()
             .filter(|item| item.parent_id == uuid)
             .map(|item| {
-                let full_path = format!("{}/{}", p_item.full_path, item.full_path);
-                println!("名称-> {}", full_path);
-                let new_p = TreeNone {
-                    parent_id: p_item.uuid.to_string(),
+                let full_path = format!("{}/{}", prev_path, item.title);
+                if cfg!(debug_assertions) {
+                    println!("目标路径: {}", full_path);
+                }
+
+                // 目标路径
+                let target_dir = format!("{}/{}", GLOBAL_CONFIG.target_output_dir, full_path);
+
+                if let Err(_) = f.mkdir(target_dir.as_str()) {
+                    Log::error("知识库目录创建失败")
+                }
+
+                // 当前层
+                let current_item = TreeNone {
+                    parent_id: uuid.to_string(),
                     uuid: item.uuid.to_string(),
-                    full_path: "".to_string(),
-                    children: vec![],
-                };
-                let new_p_item = TreeNone {
-                    parent_id: p_item.uuid.to_string(),
-                    uuid: "".to_string(),
                     full_path: full_path.to_string(),
-                    children: Self::mk_tree_toc_dir(items, &item.uuid, &new_p),
+                    name: item.name.clone(),
+                    title: item.title.clone(),
+                    children: Self::mk_tree_toc_dir(items, &item.uuid, full_path),
                 };
 
-                new_p_item
+                current_item
             })
             .collect()
     }
@@ -229,7 +242,7 @@ impl Scheduler {
 mod tests {
     use super::*;
     #[test]
-    fn test() {
-        //
+    fn test_mkdir_for_toc_tree() {
+        Scheduler::mkdir_for_toc_tree(["test-book".to_string()].to_vec())
     }
 }

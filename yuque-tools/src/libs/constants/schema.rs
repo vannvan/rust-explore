@@ -65,10 +65,10 @@ pub struct MutualAnswer {
 pub struct TreeNone {
     pub parent_id: String,
     pub uuid: String,
-    // pub title: String,
     pub full_path: String,
     // pub p_slug: String,
     #[serde(rename = "type")]
     pub children: Vec<TreeNone>,
-    // pub name: String,
+    pub title: String,
+    pub name: String,
 }
