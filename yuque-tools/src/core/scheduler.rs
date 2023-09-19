@@ -7,6 +7,8 @@
  * Copyright (c) https://github.com/vannvan
  */
 
+use inquire::{error::InquireError, Confirm, MultiSelect};
+use regex::Regex;
 use std::cell::RefCell;
 use std::process;
 
@@ -19,18 +21,17 @@ use crate::{
         },
         file::File,
         log::Log,
-        tools::{get_cache_books_info, get_local_cookies, get_user_config},
+        tools,
     },
 };
-use inquire::{error::InquireError, Confirm, MultiSelect};
 
 pub struct Scheduler;
 impl Scheduler {
     pub async fn start() -> Result<(), &'static str> {
-        let cookies = get_local_cookies();
+        let cookies = tools::get_local_cookies();
         // 没有cookie缓存，进入登录环节
         if cookies.is_empty() {
-            match get_user_config() {
+            match tools::get_user_config() {
                 Ok(user_config) => {
                     match YuqueApi::login(user_config).await {
                         Ok(_resp) => {
@@ -51,7 +52,7 @@ impl Scheduler {
             }
         } else {
             // 有cookie，不走登录
-            let books_info = get_cache_books_info();
+            let books_info = tools::get_cache_books_info();
 
             if books_info.is_ok() {
                 Self::handle_inquiry()
@@ -73,7 +74,7 @@ impl Scheduler {
             skip: true,
         };
 
-        if let Ok(user_config) = get_user_config() {
+        if let Ok(user_config) = tools::get_user_config() {
             if cfg!(debug_assertions) {
                 println!("用户配置的参数: {:?}", user_config);
             }
@@ -104,7 +105,7 @@ impl Scheduler {
             line_break: true,
         };
 
-        match get_cache_books_info() {
+        match tools::get_cache_books_info() {
             Ok(books_info) => {
                 if cfg!(debug_assertions) {
                     // println!("知识库信息：{:?}", books_info);
@@ -168,8 +169,11 @@ impl Scheduler {
             answer.toc_range, answer.skip, answer.line_break
         );
 
+        // 获取知识库，去掉二级目录
+        let toc_range = tools::get_top_level_toc_from_toc_range(&answer.toc_range);
+
         // 树形 docs列表
-        let new_nodes = Self::build_docs_nodes_for_tree(&answer.toc_range);
+        let new_nodes = Self::build_docs_nodes_for_tree(&toc_range);
         // 扁平 docs列表
         let flat_docs_list = Self::filter_valid_docs_to_flat(&new_nodes);
 
@@ -186,13 +190,14 @@ impl Scheduler {
             );
         }
 
+        // 开始下载任务
         Self::delay_download_doc_task(&answer, flat_docs_list);
     }
     /// 构造便于递归操作的node结构,将便于操作的nodes结构返回
     /// # Arguments
     /// * target_toc_range - 选中的知识库范围
     fn build_docs_nodes_for_tree(target_toc_range: &Vec<String>) -> Vec<Vec<TreeNone>> {
-        let cached_toc_info = get_cache_books_info();
+        let cached_toc_info = tools::get_cache_books_info();
         let f = File::new();
 
         if cached_toc_info.is_err() {
@@ -270,11 +275,42 @@ impl Scheduler {
     fn delay_download_doc_task(download_config: &MutualAnswer, flat_docs_list: Vec<TreeNone>) {
         Log::info("开始执行下载任务");
         let f = File::new();
+        if cfg!(debug_assertions) {
+            println!("下载任务配置： {:?}", download_config);
+        }
 
-        println!("{:?}", download_config);
+        let mut target_doc_list = flat_docs_list.clone();
+
+        // 二次过滤，因为可能只需要导出知识库下某目录的文档
+        // 如果配置知识库范围中有反斜杠就认为有二级目录
+        let is_have_sub_dir = download_config.toc_range.join("").contains("/");
+
+        // 有二级目录的情况，需要再过滤一遍
+        let target_toc_range_str = download_config.toc_range.join("|");
+        if cfg!(debug_assertions) {
+            println!("匹配正则：{}", target_toc_range_str)
+        }
+
+        let reg_set = Regex::new(&target_toc_range_str).unwrap();
+        if is_have_sub_dir {
+            target_doc_list = flat_docs_list
+                .into_iter()
+                .filter(|item| reg_set.is_match(&item.full_path))
+                .collect::<Vec<TreeNone>>()
+                .to_vec();
+        }
+
+        if cfg!(debug_assertions) {
+            let _ = f.write(
+                "./dev/secend_filter_doc.json",
+                serde_json::to_string_pretty(&target_doc_list)
+                    .unwrap()
+                    .to_string(),
+            );
+        }
 
         // TODO 这里开始定时获取文档
-        flat_docs_list.iter().for_each(|item| {
+        target_doc_list.iter().for_each(|item| {
             let target_path = format!("{}/{}.md", GLOBAL_CONFIG.target_output_dir, &item.full_path);
             let _ = f.write(&target_path, "".to_string());
         });
@@ -332,7 +368,9 @@ impl Scheduler {
             .iter()
             .filter(|item| item.parent_id == uuid)
             .map(|item| {
-                let full_path = format!("{}/{}", prev_path, item.title);
+                // 替换名称中的特殊字符
+                let regex = Regex::new(r#"[<>:"\/\\|?*\x00-\x1F]"#).unwrap();
+                let full_path = format!("{}/{}", prev_path, regex.replace_all(&item.title, ""));
 
                 // 目标路径
                 let target_dir = format!("{}/{}", GLOBAL_CONFIG.target_output_dir, full_path);
@@ -377,5 +415,28 @@ mod tests {
     #[test]
     fn test_build_docs_nodes_for_tree() {
         Scheduler::build_docs_nodes_for_tree(&["test-book".to_string()].to_vec());
+    }
+    #[test]
+    fn test_build_docs_nodes_for_tree_second_dir() {
+        Scheduler::build_docs_nodes_for_tree(&["test-book/测试目录".to_string()].to_vec());
+    }
+    #[test]
+    fn test_download_task_pre_construction() {
+        let answer = MutualAnswer {
+            toc_range: ["test-book".to_string()].to_vec(),
+            skip: true,
+            line_break: true,
+        };
+        Scheduler::download_task_pre_construction(answer)
+    }
+    #[test]
+    /// 二级目录
+    fn test_download_task_pre_construction_second_dir() {
+        let answer = MutualAnswer {
+            toc_range: ["test-book/测试目录".to_string()].to_vec(),
+            skip: true,
+            line_break: true,
+        };
+        Scheduler::download_task_pre_construction(answer)
     }
 }

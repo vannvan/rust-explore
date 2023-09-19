@@ -7,7 +7,7 @@ use std::{
 
 use super::{
     constants::schema::{
-        BookInfo, BookItem, CacheUserInfo, LocalCookiesInfo, UserCliConfig, YuqueLoginUserInfo,
+        cache_book, LocalCacheUserInfo, LocalCookiesInfo, UserCliConfig, YuqueLoginUserInfo,
     },
     constants::GLOBAL_CONFIG,
     file::File,
@@ -46,7 +46,7 @@ pub fn get_user_config() -> Result<UserCliConfig, &'static str> {
                 let mut data = String::new();
                 f.read_to_string(&mut data).expect("配置文件读取失败");
                 let config: UserCliConfig =
-                    serde_json::from_str(&data).expect("配置文件解析失败，请检查字段是否完整");
+                    serde_json::from_str(&data).expect("配置文件解析失败，请检查格式是否正确");
                 Ok(config)
             }
             Err(_) => Err("配置文件读取失败"),
@@ -58,14 +58,15 @@ pub fn get_user_config() -> Result<UserCliConfig, &'static str> {
 
 /// 获取本地缓存的知识库信息，如果已过期就返回false
 /// TODO 先去获取本地缓存的知识库，如果在半小时之内，就不用重复获取了
-pub fn get_cache_books_info() -> Result<Vec<BookItem>, bool> {
+pub fn get_cache_books_info() -> Result<Vec<cache_book::BookItem>, bool> {
     let user_cli_config = &GLOBAL_CONFIG.books_info_file;
     if Path::new(&user_cli_config).exists() {
         match fsFile::open(user_cli_config) {
             Ok(mut f) => {
                 let mut data = String::new();
                 f.read_to_string(&mut data).expect("知识库文件读取失败");
-                let config: BookInfo = serde_json::from_str(&data).expect("知识库文件解析失败");
+                let config: cache_book::BookInfo =
+                    serde_json::from_str(&data).expect("知识库文件解析失败");
                 Ok(config.books_info)
             }
             Err(_) => Err(false),
@@ -84,7 +85,7 @@ pub fn get_cache_user_info() -> Result<YuqueLoginUserInfo, bool> {
                 let mut data = String::new();
                 f.read_to_string(&mut data)
                     .expect("用户信息缓存文件读取失败");
-                let config: CacheUserInfo =
+                let config: LocalCacheUserInfo =
                     serde_json::from_str(&data).expect("用户信息缓存文件解析失败");
 
                 Ok(config.user_info)
@@ -94,4 +95,22 @@ pub fn get_cache_user_info() -> Result<YuqueLoginUserInfo, bool> {
     } else {
         Err(false)
     }
+}
+
+/// 从用户配置知识库范围获取知识库，去掉二级目录
+/// # examples
+/// get_top_level_toc_from_toc_range(&vec!["test-book/测试目录".to_string()])
+pub fn get_top_level_toc_from_toc_range(toc_range: &Vec<String>) -> Vec<String> {
+    let toc_range = &toc_range
+        .iter()
+        .map(|item| {
+            if item.contains("/") {
+                let items: Vec<&str> = item.split("/").collect();
+                items[0].to_string()
+            } else {
+                item.to_string()
+            }
+        })
+        .collect::<Vec<_>>();
+    toc_range.clone()
 }

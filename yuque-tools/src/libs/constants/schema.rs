@@ -9,6 +9,10 @@
 
 use serde::{Deserialize, Serialize};
 
+fn default_as_true() -> bool {
+    true
+}
+
 #[derive(Debug, Deserialize)]
 /// 缓存cookies信息
 pub struct LocalCookiesInfo {
@@ -17,41 +21,16 @@ pub struct LocalCookiesInfo {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct DocItem {
-    pub title: String,
-    #[serde(rename = "type")]
-    /// 用于区分是目录还是文档 DOC TITLE
-    pub node_type: String,
-    pub uuid: String,
-    pub child_uuid: String,
-    pub parent_uuid: String,
-    pub visible: u8,
-}
-#[derive(Serialize, Deserialize, Debug)]
-
-/// 知识库项目
-pub struct BookItem {
-    pub name: String,
-    pub slug: String,
-    pub docs: Vec<DocItem>,
-    pub user_login: String,
-    /// 用于区分是私有还是公共的
-    pub book_type: String,
-}
-#[derive(Serialize, Deserialize, Debug)]
-/// 缓存知识库信息
-pub struct BookInfo {
-    pub expire_time: u128,
-    pub books_info: Vec<BookItem>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
 /// 用户的CLI配置
 pub struct UserCliConfig {
     pub username: String,
     pub password: String,
+    /// 表示可以忽略校验的字段，否则会报错
+    #[serde(default)]
     pub toc_range: Vec<String>,
+    #[serde(default = "default_as_true")]
     pub skip: bool,
+    #[serde(default = "default_as_true")]
     pub line_break: bool,
 }
 
@@ -61,7 +40,7 @@ pub struct YuqueLoginUserInfo {
     pub login: String,
 }
 #[derive(Serialize, Deserialize, Debug)]
-pub struct CacheUserInfo {
+pub struct LocalCacheUserInfo {
     pub expire_time: u128,
     pub user_info: YuqueLoginUserInfo,
 }
@@ -78,6 +57,7 @@ pub struct MutualAnswer {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+/// 树形节点
 pub struct TreeNone {
     pub parent_id: String,
     pub uuid: String,
@@ -92,4 +72,37 @@ pub struct TreeNone {
     /// 子文档会有child_uuid
     pub child_uuid: String,
     pub visible: u8,
+}
+
+/// 知识库缓存信息
+pub mod cache_book {
+    use serde::{Deserialize, Serialize};
+    #[derive(Serialize, Deserialize, Debug)]
+    /// 文档项目
+    pub struct DocItem {
+        pub title: String,
+        #[serde(rename = "type")]
+        /// 用于区分是目录还是文档 DOC TITLE
+        pub node_type: String,
+        pub uuid: String,
+        pub child_uuid: String,
+        pub parent_uuid: String,
+        pub visible: u8,
+    }
+    #[derive(Serialize, Deserialize, Debug)]
+    /// 知识库项目
+    pub struct BookItem {
+        pub name: String,
+        pub slug: String,
+        pub docs: Vec<DocItem>,
+        pub user_login: String,
+        /// 用于区分是私有还是公共的
+        pub book_type: String,
+    }
+    #[derive(Serialize, Deserialize, Debug)]
+    /// 缓存知识库信息
+    pub struct BookInfo {
+        pub expire_time: u128,
+        pub books_info: Vec<BookItem>,
+    }
 }
