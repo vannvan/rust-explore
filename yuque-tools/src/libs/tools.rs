@@ -6,7 +6,9 @@ use std::{
 };
 
 use super::{
-    constants::schema::{BookInfo, BookItem, LocalCookiesInfo, UserCliConfig},
+    constants::schema::{
+        BookInfo, BookItem, CacheUserInfo, LocalCookiesInfo, UserCliConfig, YuqueLoginUserInfo,
+    },
     constants::GLOBAL_CONFIG,
     file::File,
 };
@@ -65,6 +67,27 @@ pub fn get_cache_books_info() -> Result<Vec<BookItem>, bool> {
                 f.read_to_string(&mut data).expect("知识库文件读取失败");
                 let config: BookInfo = serde_json::from_str(&data).expect("知识库文件解析失败");
                 Ok(config.books_info)
+            }
+            Err(_) => Err(false),
+        }
+    } else {
+        Err(false)
+    }
+}
+
+/// 获取缓存的用户信息
+pub fn get_cache_user_info() -> Result<YuqueLoginUserInfo, bool> {
+    let user_cli_config = &GLOBAL_CONFIG.user_info_file;
+    if Path::new(&user_cli_config).exists() {
+        match fsFile::open(user_cli_config) {
+            Ok(mut f) => {
+                let mut data = String::new();
+                f.read_to_string(&mut data)
+                    .expect("用户信息缓存文件读取失败");
+                let config: CacheUserInfo =
+                    serde_json::from_str(&data).expect("用户信息缓存文件解析失败");
+
+                Ok(config.user_info)
             }
             Err(_) => Err(false),
         }

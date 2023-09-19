@@ -7,6 +7,7 @@
  * Copyright (c) https://github.com/vannvan
  */
 
+use std::cell::RefCell;
 use std::process;
 
 use crate::{
@@ -51,6 +52,7 @@ impl Scheduler {
         } else {
             // 有cookie，不走登录
             let books_info = get_cache_books_info();
+
             if books_info.is_ok() {
                 Self::handle_inquiry()
             } else {
@@ -65,16 +67,36 @@ impl Scheduler {
 
     /// 执行询问程序
     fn handle_inquiry() {
-        let answer = Self::inquiry_user();
+        let mut answer = MutualAnswer {
+            toc_range: vec![],
+            line_break: true,
+            skip: true,
+        };
+
+        if let Ok(user_config) = get_user_config() {
+            if cfg!(debug_assertions) {
+                println!("用户配置的参数: {:?}", user_config);
+            }
+            answer.toc_range = user_config.toc_range;
+            answer.skip = user_config.skip;
+            answer.line_break = user_config.line_break
+        }
+
+        // 如果从配置传入的参数有效就不进入询问环节
         if answer.toc_range.len() > 0 {
-            Self::download_markdown_task(answer)
+            Self::download_task_pre_construction(answer);
         } else {
-            Log::error("未选择知识库，程序退出");
-            process::exit(1)
+            answer = Self::inquiry_user();
+            if answer.toc_range.len() > 0 {
+                Self::download_task_pre_construction(answer);
+            } else {
+                Log::error("未选择知识库，程序退出");
+                process::exit(1)
+            }
         }
     }
 
-    /// 询问
+    /// 询问并返回结果
     fn inquiry_user() -> MutualAnswer {
         let mut answer = MutualAnswer {
             toc_range: vec![],
@@ -128,11 +150,6 @@ impl Scheduler {
                     Ok(false) => answer.line_break = false,
                     Err(_) => panic!("选择出错，请重新尝试"),
                 }
-
-                println!(
-                    "将按以下配置进行导出：\n  知识库：{:?}\n  跳过本地：{}\n  保留换行：{}",
-                    answer.toc_range, answer.skip, answer.line_break
-                );
             }
             Err(_) => {
                 Log::error("知识库文件读取失败,退出程序");
@@ -142,25 +159,42 @@ impl Scheduler {
         answer
     }
 
-    /// 下载markdown
-    fn download_markdown_task(answer: MutualAnswer) {
+    /// 下载任务预先构造程序
+    fn download_task_pre_construction(answer: MutualAnswer) {
+        let f = File::new();
+
+        println!(
+            "将按以下配置进行导出：\n  知识库：{:?}\n  跳过本地：{}\n  保留换行：{}",
+            answer.toc_range, answer.skip, answer.line_break
+        );
+
+        // 树形 docs列表
+        let new_nodes = Self::build_docs_nodes_for_tree(&answer.toc_range);
+        // 扁平 docs列表
+        let flat_docs_list = Self::filter_valid_docs_to_flat(&new_nodes);
+
+        // 输出两个文件
         if cfg!(debug_assertions) {
-            println!("download_markdown_task 执行")
+            let _ = f.write(
+                "./dev/tree-doc.json",
+                serde_json::to_string_pretty(&new_nodes).unwrap(),
+            );
+
+            let _ = f.write(
+                "./dev/flat-doc.json",
+                serde_json::to_string_pretty(&flat_docs_list).unwrap(),
+            );
         }
-        let MutualAnswer {
-            toc_range,
-            skip,
-            line_break,
-        } = answer;
-        println!("{},{},{:?}", skip, line_break, toc_range);
 
-        //
-
-        Self::mkdir_for_toc_tree(toc_range)
+        Self::delay_download_doc_task(&answer, flat_docs_list);
     }
-    /// 生成与知识库结构相同的树形目录
-    fn mkdir_for_toc_tree(target_toc_range: Vec<String>) {
+    /// 构造便于递归操作的node结构,将便于操作的nodes结构返回
+    /// # Arguments
+    /// * target_toc_range - 选中的知识库范围
+    fn build_docs_nodes_for_tree(target_toc_range: &Vec<String>) -> Vec<Vec<TreeNone>> {
         let cached_toc_info = get_cache_books_info();
+        let f = File::new();
+
         if cached_toc_info.is_err() {
             panic!("知识库信息读取失败，程序退出");
         } else {
@@ -174,21 +208,31 @@ impl Scheduler {
                             .docs
                             .iter()
                             .map(|child| TreeNone {
-                                parent_id: child.parent_uuid.to_string(),
-                                uuid: child.uuid.clone(),
-                                full_path: child.title.to_string(),
                                 children: vec![],
-                                name: "".to_string(), // 文档级别没有name
+                                name: "".to_string(),   // 文档级别没有name
+                                user: "".to_string(),   // 在没递归之前是空的
+                                p_slug: "".to_string(), // 在没递归之前是空的
+                                uuid: child.uuid.clone(),
+                                visible: child.visible,
+                                full_path: child.title.to_string(),
+                                parent_id: child.parent_uuid.to_string(),
                                 title: child.title.to_string(),
+                                child_uuid: child.child_uuid.to_string(),
+                                node_type: child.node_type.to_string(), // DOC 或 TITLE
                             })
                             .collect();
-
+                        // 这一级是知识库级别
                         Some(TreeNone {
                             parent_id: "".to_string(),
                             uuid: "".to_string(),
                             full_path: "".to_string(),
-                            name: item.name.clone(),
                             title: "".to_string(), // 知识库级别没有标题
+                            child_uuid: "".to_string(),
+                            node_type: "".to_string(),
+                            visible: 1,
+                            p_slug: item.slug.to_string(), // 作为文档上一级slug拼接
+                            name: item.name.clone(),       // 知识库名称
+                            user: item.user_login.to_string(), // 当前文档所属用户
                             children,
                         })
                     } else {
@@ -197,38 +241,127 @@ impl Scheduler {
                 })
                 .collect();
 
-            for node in nodes.iter() {
-                Self::mk_tree_toc_dir(&node.children, "", node.name.to_owned());
-            }
+            let new_nodes: Vec<_> = nodes
+                .iter()
+                .map(|node| {
+                    // 这里要提前创建知识库顶级目录,makeup_tree_toc_dir是创建知识库下每一层目录
+                    let target_dir = format!("{}/{}", GLOBAL_CONFIG.target_output_dir, node.name);
+                    if let Err(_) = f.mkdir(target_dir.as_str()) {
+                        Log::error("知识库目录创建失败")
+                    }
+                    Self::makeup_tree_toc_dir(
+                        &node.children,
+                        "",
+                        node.name.to_owned(),
+                        &node.user,
+                        &node.p_slug,
+                    )
+                })
+                .collect();
+
+            new_nodes
         }
     }
 
-    fn mk_tree_toc_dir(items: &Vec<TreeNone>, uuid: &str, prev_path: String) -> Vec<TreeNone> {
+    /// 定时下载任务
+    /// # Arguments
+    /// * download_config - 下载配置
+    /// * flat_docs_list -  扁平文档列表
+    fn delay_download_doc_task(download_config: &MutualAnswer, flat_docs_list: Vec<TreeNone>) {
+        Log::info("开始执行下载任务");
+        let f = File::new();
+
+        println!("{:?}", download_config);
+
+        // TODO 这里开始定时获取文档
+        flat_docs_list.iter().for_each(|item| {
+            let target_path = format!("{}/{}.md", GLOBAL_CONFIG.target_output_dir, &item.full_path);
+            let _ = f.write(&target_path, "".to_string());
+        });
+    }
+
+    /// 从树形列表中拿到有效的文档列表，并以扁平结构返回
+    /// # Arguments
+    /// * tree - 树形列表
+    fn filter_valid_docs_to_flat(tree: &Vec<Vec<TreeNone>>) -> Vec<TreeNone> {
+        let list: RefCell<Vec<TreeNone>> = RefCell::new(vec![]);
+
+        fn each(list: &RefCell<Vec<TreeNone>>, docs: &Vec<TreeNone>) {
+            if !docs.is_empty() {
+                docs.iter().for_each(|doc| {
+                    if doc.node_type == "DOC" && doc.visible == 1 {
+                        let cloned_doc = doc.clone();
+                        list.borrow_mut().push(cloned_doc);
+                    }
+
+                    if !doc.children.is_empty() {
+                        each(list, &doc.children);
+                    }
+                });
+            }
+        }
+
+        tree.iter().for_each(|item| {
+            item.iter().for_each(|sub_item| {
+                if sub_item.node_type == "DOC" && sub_item.visible == 1 {
+                    list.borrow_mut().push(sub_item.clone());
+                }
+                each(&list, &sub_item.children);
+            });
+        });
+
+        list.take()
+    }
+
+    /// 递归创建树形目录，顺便将文档路径拼接完成，同时记录文档对应父级slug和user，用于最终download环节
+    /// # Arguments
+    /// * items - 递归下一级
+    /// * uuid - 用于匹配下一级的uuid
+    /// * prev_path - 前一层完整路径，用于下一级继续拼接
+    /// * p_user - 文档的所属user
+    /// * p_slug - 文档的父级slug
+    fn makeup_tree_toc_dir(
+        items: &Vec<TreeNone>,
+        uuid: &str,
+        prev_path: String,
+        p_user: &str,
+        p_slug: &str,
+    ) -> Vec<TreeNone> {
         let f = File::new();
         items
             .iter()
             .filter(|item| item.parent_id == uuid)
             .map(|item| {
                 let full_path = format!("{}/{}", prev_path, item.title);
-                if cfg!(debug_assertions) {
-                    println!("目标路径: {}", full_path);
-                }
 
                 // 目标路径
                 let target_dir = format!("{}/{}", GLOBAL_CONFIG.target_output_dir, full_path);
-
-                if let Err(_) = f.mkdir(target_dir.as_str()) {
-                    Log::error("知识库目录创建失败")
+                // 打印路径
+                if cfg!(debug_assertions) {
+                    println!("目标路径: {}", target_dir);
+                }
+                if item.node_type == "TITLE" || !item.child_uuid.is_empty() {
+                    if let Err(_) = f.mkdir(target_dir.as_str()) {
+                        Log::error("知识库目录创建失败")
+                    }
                 }
 
                 // 当前层
                 let current_item = TreeNone {
                     parent_id: uuid.to_string(),
                     uuid: item.uuid.to_string(),
-                    full_path: full_path.to_string(),
                     name: item.name.clone(),
                     title: item.title.clone(),
-                    children: Self::mk_tree_toc_dir(items, &item.uuid, full_path),
+                    node_type: item.node_type.clone(),
+                    child_uuid: item.child_uuid.clone(),
+                    visible: item.visible.clone(),
+                    // 之后是来自上一级的信息
+                    full_path: full_path.to_string(),
+                    p_slug: p_slug.to_string(),
+                    user: p_user.to_string(),
+                    children: Self::makeup_tree_toc_dir(
+                        items, &item.uuid, full_path, p_user, p_slug,
+                    ),
                 };
 
                 current_item
@@ -242,7 +375,7 @@ impl Scheduler {
 mod tests {
     use super::*;
     #[test]
-    fn test_mkdir_for_toc_tree() {
-        Scheduler::mkdir_for_toc_tree(["test-book".to_string()].to_vec())
+    fn test_build_docs_nodes_for_tree() {
+        Scheduler::build_docs_nodes_for_tree(&["test-book".to_string()].to_vec());
     }
 }

@@ -42,7 +42,7 @@ pub struct GlobalConfig {
     pub target_output_dir: String,
     /// cookies_file
     pub cookies_file: String,
-    /// 用户信息
+    /// 缓存的用户信息
     pub user_info_file: String,
     /// 知识库信息
     pub books_info_file: String,

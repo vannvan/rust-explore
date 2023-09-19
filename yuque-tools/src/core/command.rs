@@ -67,10 +67,11 @@ impl YCommand {
     /// 生成一套配置
     fn generate_cli_config() -> Result<bool, bool> {
         let user_cli_config = UserCliConfig {
-            username: "".to_owned(),
-            password: "".to_owned(),
-            toc_range: [].to_vec(),
+            username: "".to_string(),
+            password: "".to_string(),
+            toc_range: vec![],
             skip: true,
+            line_break: true,
         };
 
         // 格式化json文件
@@ -80,17 +81,15 @@ impl YCommand {
 
         match f.write(&GLOBAL_CONFIG.user_cli_config_file, json_string) {
             Ok(_) => {
-                let mut success_info = String::from("配置文件已初始化，见👉 ");
-                success_info.push_str(&GLOBAL_CONFIG.user_cli_config_file.to_string());
+                let success_info = format!(
+                    "配置文件已初始化，见👉{}",
+                    GLOBAL_CONFIG.user_cli_config_file
+                );
                 Log::info(&success_info);
                 return Ok(true);
             }
             Err(err) => {
-                // if cfg!(debug_assertions) {
-                println!("{}", err);
-                // }
-                Log::error("配置文件生成失败");
-                return Err(false);
+                panic!("配置文件生成失败 {}", err);
             }
         }
     }

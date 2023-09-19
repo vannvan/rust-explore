@@ -19,7 +19,7 @@ use crate::libs::{
     file::File,
     log::Log,
     request::Request,
-    tools::{gen_timestamp, get_local_cookies},
+    tools::{gen_timestamp, get_cache_user_info, get_local_cookies},
 };
 use url::form_urlencoded::parse;
 
@@ -87,15 +87,23 @@ impl YuqueApi {
             if resp.get("data").is_some() {
                 let mut books_data = vec![];
                 let data_wrap = resp.get("data").unwrap();
-                // TODO 待调整
-                let current_login = "vannvan";
+                let current_login = get_cache_user_info().unwrap().login.to_string();
 
                 for item in data_wrap.as_array().unwrap() {
                     for sub_item in item.to_owned().get("books").unwrap().as_array().unwrap() {
                         let current_book_user_login =
                             sub_item.get("user").unwrap().get("login").unwrap();
+                        if cfg!(debug_assertions) {
+                            println!(
+                                "当前登录用户 {}, 当前知识库用户 {},{}",
+                                current_login.to_string(),
+                                current_book_user_login,
+                                current_login.to_string() == current_book_user_login.to_owned()
+                            );
+                        }
+
                         // 知识库所属
-                        let book_type = if current_login == current_book_user_login.to_string() {
+                        let book_type = if current_login == current_book_user_login.to_owned() {
                             "owner"
                         } else {
                             "collab"
@@ -264,9 +272,9 @@ mod tests {
     }
     #[tokio::test]
     async fn test_crawl_fail() {
-        let ss = YuqueApi::crawl_book_toc_info("/vannvan/dd67").await;
+        let doc_info = YuqueApi::crawl_book_toc_info("/vannvan/dd67").await;
 
-        match ss {
+        match doc_info {
             Ok(resp) => {
                 if resp["book"].is_null() {
                     println!("返回数据为空")

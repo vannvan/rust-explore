@@ -20,10 +20,12 @@ pub struct LocalCookiesInfo {
 pub struct DocItem {
     pub title: String,
     #[serde(rename = "type")]
-    node_type: String,
+    /// 用于区分是目录还是文档 DOC TITLE
+    pub node_type: String,
     pub uuid: String,
     pub child_uuid: String,
     pub parent_uuid: String,
+    pub visible: u8,
 }
 #[derive(Serialize, Deserialize, Debug)]
 
@@ -33,6 +35,7 @@ pub struct BookItem {
     pub slug: String,
     pub docs: Vec<DocItem>,
     pub user_login: String,
+    /// 用于区分是私有还是公共的
     pub book_type: String,
 }
 #[derive(Serialize, Deserialize, Debug)]
@@ -49,11 +52,24 @@ pub struct UserCliConfig {
     pub password: String,
     pub toc_range: Vec<String>,
     pub skip: bool,
+    pub line_break: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct YuqueLoginUserInfo {
+    pub name: String,
+    pub login: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CacheUserInfo {
+    pub expire_time: u128,
+    pub user_info: YuqueLoginUserInfo,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 /// 交互信息
 pub struct MutualAnswer {
+    /// 知识库范围
     pub toc_range: Vec<String>,
     /// 是否跳过本地文件
     pub skip: bool,
@@ -61,14 +77,19 @@ pub struct MutualAnswer {
     pub line_break: bool,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct TreeNone {
     pub parent_id: String,
     pub uuid: String,
     pub full_path: String,
-    // pub p_slug: String,
+    pub p_slug: String,
     #[serde(rename = "type")]
+    pub node_type: String,
     pub children: Vec<TreeNone>,
     pub title: String,
     pub name: String,
+    pub user: String,
+    /// 子文档会有child_uuid
+    pub child_uuid: String,
+    pub visible: u8,
 }
