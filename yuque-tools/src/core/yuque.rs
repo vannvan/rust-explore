@@ -19,7 +19,7 @@ use crate::libs::{
     file::File,
     log::Log,
     request::Request,
-    tools::{gen_timestamp, get_cache_user_info, get_local_cookies},
+    tools::{gen_timestamp, get_cache_user_info},
 };
 use url::form_urlencoded::parse;
 
@@ -181,72 +181,36 @@ impl YuqueApi {
         if cfg!(debug_assertions) {
             println!("GET-> {}", &target_url);
         }
-        let client = reqwest::Client::new();
 
-        let cookies = get_local_cookies();
+        match Request::get_text(&target_url).await {
+            Ok(res_text) => {
+                // 优化
+                let reg = Regex::new(r#"decodeURIComponent\("([^"]+)"\)"#).unwrap();
+                if let Some(captured) = reg.captures(&res_text.to_string()) {
+                    let decoded = &captured[1];
 
-        if cookies.is_empty() {
-            Log::error("cookies已过期，请清除缓存后重新执行程序");
-            process::exit(1)
-        }
-
-        let res = client
-            .get(target_url)
-            .header("cookie", cookies)
-            .header("content-type", "application/json")
-            .header("x-requested-with", "XMLHttpRequest")
-            .send()
-            .await?;
-
-        let res_text = res.text().await?;
-
-        // let reg = Regex::new(r#"decodeURIComponent.*""#).unwrap();
-        // Regex::new(r#"decodeURIComponent\("([^"]+)"\)"#).unwrap()
-        // if let Some(captures) = reg.captures(&res_text.to_string()) {
-        //     let re = Regex::new(r#"".*""#).unwrap();
-        //     let caps = re.captures(captures.get(0).unwrap().as_str());
-        // let decoded: String = parse(
-        //     caps.unwrap()
-        //         .get(0)
-        //         .unwrap()
-        //         .to_owned()
-        //         .as_str()
-        //         .replace(r#"""#, "")
-        //         .as_bytes(),
-        // )
-        //     .map(|(key, val)| [key, val].concat())
-        //     .collect();
-
-        //     let parsed: Value = serde_json::from_str(&decoded).unwrap();
-
-        //     // println!("{:?}", parsed["book"]["toc"])
-        //     // let sssss = parsed["book"]["toc"];
-        //     return Ok(parsed);
-        // } else {
-        //     println!("No match found");
-        //     return Ok(Value::String("".to_owned()));
-        // }
-        // 优化
-        let reg = Regex::new(r#"decodeURIComponent\("([^"]+)"\)"#).unwrap();
-        if let Some(captured) = reg.captures(&res_text.to_string()) {
-            let decoded = &captured[1];
-
-            let decoded1: String = parse(decoded.as_bytes())
-                .map(|(key, val)| [key, val].concat())
-                .collect();
-            let parsed: Value = serde_json::from_str(&decoded1).unwrap();
-            // println!("Decoded value: {}", decoded);
-            Ok(parsed)
-        } else {
-            println!("No match found");
-            return Ok(Value::String("{}".to_owned()));
+                    let decoded1: String = parse(decoded.as_bytes())
+                        .map(|(key, val)| [key, val].concat())
+                        .collect();
+                    let parsed: Value = serde_json::from_str(&decoded1).unwrap();
+                    // println!("Decoded value: {}", decoded);
+                    Ok(parsed)
+                } else {
+                    println!("No match found");
+                    return Ok(Value::String("{}".to_owned()));
+                }
+            }
+            Err(err) => Err(err),
         }
     }
 
     /// 通过下载接口获取到md文件内容
-    pub async fn get_markdown_content(url: &str) -> Result<String, reqwest::Error> {
-        println!("{}", url);
-        Ok("()".to_string())
+    pub async fn get_markdown_content(url: &str) -> Result<String, Null> {
+        if let Ok(content) = Request::get_text(&url).await {
+            Ok(content)
+        } else {
+            Err(Null)
+        }
     }
 }
 
@@ -286,7 +250,7 @@ mod tests {
         }
     }
     #[test]
-    fn reg() {
+    fn reg_toc_info() {
         let input = r#"window.appData = JSON.parse(decodeURIComponent("%7B%22me%22%3A%7B%22PERMISSION%22%3A"))"#;
 
         let re = Regex::new(r#"decodeURIComponent\("([^"]+)"\)"#).unwrap();
@@ -295,6 +259,24 @@ mod tests {
             println!("Decoded value: {}", decoded);
         } else {
             println!("No match found");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_get_doc_content() {
+        let line_break = true;
+
+        let query = format!(
+            "attachment=true&latexcode=false&anchor=false&linebreak={}",
+            line_break
+        );
+
+        let target_url = format!("/vannvan/dd67e4/fogcsik8cxgvnodw/markdown?{}", query);
+
+        if let Ok(content) = YuqueApi::get_markdown_content(&target_url).await {
+            assert_eq!(content, "二级子文档\n")
+        } else {
+            panic!("内容获取失败")
         }
     }
 }
