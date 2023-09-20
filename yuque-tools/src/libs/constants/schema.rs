@@ -62,16 +62,20 @@ pub struct TreeNone {
     pub parent_id: String,
     pub uuid: String,
     pub full_path: String,
-    pub p_slug: String,
     #[serde(rename = "type")]
     pub node_type: String,
     pub children: Vec<TreeNone>,
     pub title: String,
     pub name: String,
-    pub user: String,
     /// 子文档会有child_uuid
     pub child_uuid: String,
     pub visible: u8,
+    /// 父级slug
+    pub p_slug: String,
+    /// 文档所属user
+    pub user: String,
+    /// 文档地址
+    pub url: String,
 }
 
 /// 知识库缓存信息
@@ -88,6 +92,8 @@ pub mod cache_book {
         pub child_uuid: String,
         pub parent_uuid: String,
         pub visible: u8,
+        /// 这个是必须的，导出的时候需要
+        pub url: String,
     }
     #[derive(Serialize, Deserialize, Debug)]
     /// 知识库项目

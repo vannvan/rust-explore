@@ -224,6 +224,7 @@ impl Scheduler {
                                 title: child.title.to_string(),
                                 child_uuid: child.child_uuid.to_string(),
                                 node_type: child.node_type.to_string(), // DOC 或 TITLE
+                                url: child.url.clone(),                 // 只有文档级别有
                             })
                             .collect();
                         // 这一级是知识库级别
@@ -234,6 +235,7 @@ impl Scheduler {
                             title: "".to_string(), // 知识库级别没有标题
                             child_uuid: "".to_string(),
                             node_type: "".to_string(),
+                            url: "".to_string(),
                             visible: 1,
                             p_slug: item.slug.to_string(), // 作为文档上一级slug拼接
                             name: item.name.clone(),       // 知识库名称
@@ -312,6 +314,14 @@ impl Scheduler {
         // TODO 这里开始定时获取文档
         target_doc_list.iter().for_each(|item| {
             let target_path = format!("{}/{}.md", GLOBAL_CONFIG.target_output_dir, &item.full_path);
+            // let {url,user} = item;
+            if cfg!(debug_assertions) {
+                println!(
+                    "导出链接: {}",
+                    format!("/{}/{}/{}", item.user, item.p_slug, item.url)
+                )
+            }
+            // if let Ok(content) = YuqueApi::get_markdown_content(url)
             let _ = f.write(&target_path, "".to_string());
         });
     }
@@ -393,10 +403,12 @@ impl Scheduler {
                     node_type: item.node_type.clone(),
                     child_uuid: item.child_uuid.clone(),
                     visible: item.visible.clone(),
+                    url: item.url.clone(),
                     // 之后是来自上一级的信息
                     full_path: full_path.to_string(),
                     p_slug: p_slug.to_string(),
                     user: p_user.to_string(),
+
                     children: Self::makeup_tree_toc_dir(
                         items, &item.uuid, full_path, p_user, p_slug,
                     ),
