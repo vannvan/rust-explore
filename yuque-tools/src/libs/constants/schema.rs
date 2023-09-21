@@ -45,7 +45,7 @@ pub struct LocalCacheUserInfo {
     pub user_info: YuqueLoginUserInfo,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 /// 交互信息
 pub struct MutualAnswer {
     /// 知识库范围

@@ -177,12 +177,7 @@ impl YuqueApi {
 
     /// 爬取知识库
     async fn crawl_book_toc_info(url: &str) -> Result<Value, reqwest::Error> {
-        let target_url = GLOBAL_CONFIG.yuque_host.clone() + &url;
-        if cfg!(debug_assertions) {
-            println!("GET-> {}", &target_url);
-        }
-
-        match Request::get_text(&target_url).await {
+        match Request::get_text(&url).await {
             Ok(res_text) => {
                 // 优化
                 let reg = Regex::new(r#"decodeURIComponent\("([^"]+)"\)"#).unwrap();
@@ -205,8 +200,16 @@ impl YuqueApi {
     }
 
     /// 通过下载接口获取到md文件内容
-    pub async fn get_markdown_content(url: &str) -> Result<String, Null> {
-        if let Ok(content) = Request::get_text(&url).await {
+    pub async fn get_markdown_content(url: &str, line_break: bool) -> Result<String, Null> {
+        let line_break = line_break;
+
+        let query = format!(
+            "attachment=true&latexcode=false&anchor=false&linebreak={}",
+            line_break
+        );
+
+        let target_url = format!("{}/markdown?{}", url, query);
+        if let Ok(content) = Request::get_text(&target_url).await {
             Ok(content)
         } else {
             Err(Null)
@@ -264,16 +267,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_doc_content() {
-        let line_break = true;
-
-        let query = format!(
-            "attachment=true&latexcode=false&anchor=false&linebreak={}",
-            line_break
-        );
-
-        let target_url = format!("/vannvan/dd67e4/fogcsik8cxgvnodw/markdown?{}", query);
-
-        if let Ok(content) = YuqueApi::get_markdown_content(&target_url).await {
+        if let Ok(content) =
+            YuqueApi::get_markdown_content(&"/vannvan/dd67e4/fogcsik8cxgvnodw".to_string(), true)
+                .await
+        {
+            println!("{}", content);
             assert_eq!(content, "二级子文档\n")
         } else {
             panic!("内容获取失败")

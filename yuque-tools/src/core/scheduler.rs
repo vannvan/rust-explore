@@ -9,8 +9,9 @@
 
 use inquire::{error::InquireError, Confirm, MultiSelect};
 use regex::Regex;
-use std::cell::RefCell;
 use std::process;
+use std::time::Duration;
+use std::{cell::RefCell, thread::sleep};
 
 use crate::{
     core::yuque::YuqueApi,
@@ -160,7 +161,7 @@ impl Scheduler {
         answer
     }
 
-    /// 下载任务预先构造程序
+    /// 导出任务预先构造程序
     fn download_task_pre_construction(answer: MutualAnswer) {
         let f = File::new();
 
@@ -190,9 +191,9 @@ impl Scheduler {
             );
         }
 
-        // 开始下载任务
-        Self::delay_download_doc_task(&answer, flat_docs_list);
+        Self::delay_download_doc_task(answer, flat_docs_list)
     }
+
     /// 构造便于递归操作的node结构,将便于操作的nodes结构返回
     /// # Arguments
     /// * target_toc_range - 选中的知识库范围
@@ -270,24 +271,34 @@ impl Scheduler {
         }
     }
 
-    /// 定时下载任务
+    /// 定时导出任务
     /// # Arguments
-    /// * download_config - 下载配置
+    /// * download_config - 导出配置
     /// * flat_docs_list -  扁平文档列表
-    fn delay_download_doc_task(download_config: &MutualAnswer, flat_docs_list: Vec<TreeNone>) {
-        Log::info("开始执行下载任务");
+    fn delay_download_doc_task(download_config: MutualAnswer, flat_docs_list: Vec<TreeNone>) {
         let f = File::new();
-        if cfg!(debug_assertions) {
-            println!("下载任务配置： {:?}", download_config);
-        }
 
         let mut target_doc_list = flat_docs_list.clone();
+
+        let len = target_doc_list.iter().len();
+        let need_time = len * &GLOBAL_CONFIG.duration / 1000;
+
+        if cfg!(debug_assertions) {
+            println!("导出任务配置： {:?}", download_config);
+        }
+
+        Log::info(
+            &format!(
+                "开始执行导出任务，共 {} 篇文档，预计需要 {} 秒",
+                len, need_time
+            )
+            .to_string(),
+        );
 
         // 二次过滤，因为可能只需要导出知识库下某目录的文档
         // 如果配置知识库范围中有反斜杠就认为有二级目录
         let is_have_sub_dir = download_config.toc_range.join("").contains("/");
 
-        // 有二级目录的情况，需要再过滤一遍
         let target_toc_range_str = download_config.toc_range.join("|");
         if cfg!(debug_assertions) {
             println!("匹配正则：{}", target_toc_range_str)
@@ -311,19 +322,34 @@ impl Scheduler {
             );
         }
 
-        // TODO 这里开始定时获取文档
-        target_doc_list.iter().for_each(|item| {
-            let target_path = format!("{}/{}.md", GLOBAL_CONFIG.target_output_dir, &item.full_path);
-            // let {url,user} = item;
-            if cfg!(debug_assertions) {
-                println!(
-                    "导出链接: {}",
-                    format!("/{}/{}/{}", item.user, item.p_slug, item.url)
-                )
+        for item in target_doc_list {
+            tokio::spawn(Self::get_and_save_content(item, download_config.clone()));
+            sleep(Duration::from_millis(
+                GLOBAL_CONFIG.duration.try_into().unwrap(),
+            ));
+        }
+        Log::success("导出任务执行完毕!");
+    }
+
+    /// 获取内容并保存文件
+    async fn get_and_save_content(item: TreeNone, download_config: MutualAnswer) {
+        let f = File::new();
+
+        let target_path = format!("{}/{}.md", GLOBAL_CONFIG.target_output_dir, &item.full_path);
+
+        let url = format!("/{}/{}/{}", item.user, item.p_slug, item.url);
+
+        if let Ok(content) = YuqueApi::get_markdown_content(&url, download_config.line_break).await
+        {
+            if f.exists(&target_path) && download_config.skip {
+                Log::info(&format!("{} 跳过", item.full_path))
+            } else {
+                Log::success(&format!("{} 导出成功", item.full_path));
+                let _ = f.write(&target_path, content.to_string());
             }
-            // if let Ok(content) = YuqueApi::get_markdown_content(url)
-            let _ = f.write(&target_path, "".to_string());
-        });
+        } else {
+            Log::error(&format!("{} 导出失败", item.full_path).to_string())
+        }
     }
 
     /// 从树形列表中拿到有效的文档列表，并以扁平结构返回
@@ -385,9 +411,9 @@ impl Scheduler {
                 // 目标路径
                 let target_dir = format!("{}/{}", GLOBAL_CONFIG.target_output_dir, full_path);
                 // 打印路径
-                if cfg!(debug_assertions) {
-                    println!("目标路径: {}", target_dir);
-                }
+                // if cfg!(debug_assertions) {
+                //     println!("目标路径: {}", target_dir);
+                // }
                 if item.node_type == "TITLE" || !item.child_uuid.is_empty() {
                     if let Err(_) = f.mkdir(target_dir.as_str()) {
                         Log::error("知识库目录创建失败")

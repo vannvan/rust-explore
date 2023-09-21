@@ -48,6 +48,8 @@ pub struct GlobalConfig {
     pub books_info_file: String,
     /// 过期时间,1天
     pub local_expire: u128,
+    /// 下载频率
+    pub duration: usize,
 }
 #[derive(Serialize, Deserialize, Debug)]
 struct Conf {
