@@ -89,3 +89,7 @@ fn main() {
     println!("{:#?}", tree);
 }
 ```
+
+## 查看支持构建的目标列表
+
+> rustc --print target-list
