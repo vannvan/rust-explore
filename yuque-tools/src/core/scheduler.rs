@@ -9,6 +9,7 @@
 
 use inquire::PasswordDisplayMode;
 use inquire::{error::InquireError, Confirm, MultiSelect, Password, Text};
+use progress_bar::*;
 use regex::Regex;
 use std::process;
 use std::time::Duration;
@@ -363,12 +364,17 @@ impl Scheduler {
             );
         }
 
+        init_progress_bar(len);
+        set_progress_bar_action("Loading", Color::Blue, Style::Bold);
+
         for item in target_doc_list {
             tokio::spawn(Self::get_and_save_content(item, download_config.clone()));
             sleep(Duration::from_millis(
                 GLOBAL_CONFIG.duration.try_into().unwrap(),
             ));
+            inc_progress_bar();
         }
+        finalize_progress_bar();
         Log::success("导出任务执行完毕!");
     }
 
@@ -376,20 +382,24 @@ impl Scheduler {
     async fn get_and_save_content(item: TreeNone, download_config: MutualAnswer) {
         let f = File::new();
 
-        let target_path = format!("{}/{}.md", GLOBAL_CONFIG.target_output_dir, &item.full_path);
+        // 本地保存路径
+        let target_save_path =
+            format!("{}/{}.md", GLOBAL_CONFIG.target_output_dir, &item.full_path);
 
-        let url = format!("/{}/{}/{}", item.user, item.p_slug, item.url);
+        // yuque的文档地址
+        let target_doc_url = format!("/{}/{}/{}", item.user, item.p_slug, item.url);
 
-        if let Ok(content) = YuqueApi::get_markdown_content(&url, download_config.line_break).await
+        if let Ok(content) =
+            YuqueApi::get_markdown_content(&target_doc_url, download_config.line_break).await
         {
-            if f.exists(&target_path) && download_config.skip {
-                Log::info(&format!("{} 跳过", item.full_path))
+            if f.exists(&target_save_path) && download_config.skip {
+                print_progress_bar_info("Skip", &item.full_path, Color::Cyan, Style::Normal);
             } else {
-                Log::success(&format!("{} 导出成功", item.full_path));
-                let _ = f.write(&target_path, content.to_string());
+                print_progress_bar_info("Success", &item.full_path, Color::Green, Style::Bold);
+                let _ = f.write(&target_save_path, content.to_string());
             }
         } else {
-            Log::error(&format!("{} 导出失败", item.full_path).to_string())
+            print_progress_bar_info("Failed", &item.full_path, Color::Red, Style::Normal);
         }
     }
 
