@@ -14,7 +14,7 @@ use serde_json::{json, Value};
 use std::{collections::HashMap, process};
 
 use crate::libs::{
-    constants::{schema::UserCliConfig, GLOBAL_CONFIG},
+    constants::GLOBAL_CONFIG,
     encrypt::encrypt_password,
     file::File,
     log::Log,
@@ -44,11 +44,11 @@ pub struct YuqueApi;
 #[allow(dead_code)]
 impl YuqueApi {
     /// 登录语雀并存储cookies
-    pub async fn login(user_config: UserCliConfig) -> Result<bool, bool> {
+    pub async fn login(username: &str, password: &str) -> Result<bool, bool> {
         // println!("登录语雀:{:?}", user_config);
-        let _password = encrypt_password(&user_config.password);
+        let _password = encrypt_password(&password);
         let mut params = HashMap::new();
-        params.insert("login", user_config.username.to_string());
+        params.insert("login", username.to_string());
         params.insert("password", _password.to_string());
         params.insert("loginType", "password".to_string());
 

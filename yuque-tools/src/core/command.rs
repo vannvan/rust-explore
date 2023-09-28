@@ -25,18 +25,17 @@ pub struct Cli {
 }
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-    /// 获取知识库
+    /// 获取知识库(交互流程请参考文档说明)
     #[command(arg_required_else_help = false)]
     Pull,
-    /// 初始化配置
+    /// 初始化工具配置
     #[command(arg_required_else_help = false)]
     Init,
-    /// 清除缓存
+    /// 清除本地缓存
     #[command(arg_required_else_help = false)]
     Clear,
-    /// 工具更新
-    #[command(arg_required_else_help = false)]
-    Upgrade,
+    // #[command(arg_required_else_help = false)]
+    // Upgrade,
 }
 
 pub struct YCommand;
@@ -55,10 +54,6 @@ impl YCommand {
             }
             Commands::Init => {
                 let _ = Self::generate_cli_config();
-                Ok(())
-            }
-            Commands::Upgrade => {
-                println!("更新");
                 Ok(())
             }
         }

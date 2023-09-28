@@ -20,10 +20,18 @@ pub struct LocalCookiesInfo {
     pub cookies: String,
 }
 
+/// yuque账号信息
+pub struct YuqueAccount {
+    pub username: String,
+    pub password: String,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 /// 用户的CLI配置
 pub struct UserCliConfig {
+    #[serde(default)]
     pub username: String,
+    #[serde(default)]
     pub password: String,
     /// 表示可以忽略校验的字段，否则会报错
     #[serde(default)]

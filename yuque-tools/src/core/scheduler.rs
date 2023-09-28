@@ -7,7 +7,8 @@
  * Copyright (c) https://github.com/vannvan
  */
 
-use inquire::{error::InquireError, Confirm, MultiSelect};
+use inquire::PasswordDisplayMode;
+use inquire::{error::InquireError, Confirm, MultiSelect, Password, Text};
 use regex::Regex;
 use std::process;
 use std::time::Duration;
@@ -17,7 +18,7 @@ use crate::{
     core::yuque::YuqueApi,
     libs::{
         constants::{
-            schema::{MutualAnswer, TreeNone},
+            schema::{MutualAnswer, TreeNone, YuqueAccount},
             GLOBAL_CONFIG,
         },
         file::File,
@@ -34,7 +35,20 @@ impl Scheduler {
         if cookies.is_empty() {
             match tools::get_user_config() {
                 Ok(user_config) => {
-                    match YuqueApi::login(user_config).await {
+                    if cfg!(debug_assertions) {
+                        println!("user_config: {:?}", user_config);
+                    }
+                    // 默认使用配置中的账号信息
+                    let mut account = YuqueAccount {
+                        username: user_config.username.to_string(),
+                        password: user_config.password.to_string(),
+                    };
+                    // 如果配置中缺少字段，就进入询问环节
+                    if account.username.is_empty() || account.password.is_empty() {
+                        account = Self::inquire_yuque_account();
+                    }
+
+                    match YuqueApi::login(&account.username, &account.password).await {
                         Ok(_resp) => {
                             Log::success("登录成功!");
                             // 接着就开始获取知识库
@@ -65,6 +79,33 @@ impl Scheduler {
             }
         }
         Ok(())
+    }
+
+    /// 交互式登录
+    fn inquire_yuque_account() -> YuqueAccount {
+        let mut account = YuqueAccount {
+            username: "".to_string(),
+            password: "".to_string(),
+        };
+
+        let username = Text::new("yuque username:").prompt();
+        match username {
+            Ok(username) => account.username = username,
+            Err(_) => println!("An error happened when asking for your name, try again later."),
+        }
+
+        let password = Password::new("yuque password:")
+            .without_confirmation()
+            .with_display_mode(PasswordDisplayMode::Masked)
+            .prompt();
+
+        match password {
+            Ok(password) => account.password = password,
+            Err(_) => {
+                println!("An error happened when asking for your password, try again later.")
+            }
+        }
+        account
     }
 
     /// 执行询问程序
