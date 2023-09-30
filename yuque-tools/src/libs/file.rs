@@ -8,7 +8,7 @@
  */
 
 use std::{
-    fs,
+    fs::{self, OpenOptions},
     io::{Error, Read, Write},
     path,
 };
@@ -66,6 +66,19 @@ impl File {
 
         let mut file = fs::File::create(path)?;
         file.write_all(content.as_bytes())?;
+
+        Ok(())
+    }
+
+    /// 追加内容
+    pub fn append(&self, f: &str, content: String) -> Result<(), Error> {
+        let path = path::Path::new(f);
+
+        let mut file = OpenOptions::new()
+            .append(true)
+            .open(path)
+            .expect("cannot open file");
+        file.write_all(content.as_bytes()).expect("write failed");
 
         Ok(())
     }

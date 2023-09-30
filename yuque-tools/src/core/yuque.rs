@@ -209,10 +209,15 @@ impl YuqueApi {
         );
 
         let target_url = format!("{}/markdown?{}", url, query);
-        if let Ok(content) = Request::get_text(&target_url).await {
-            Ok(content)
-        } else {
-            Err(Null)
+        match Request::get_text(&target_url).await {
+            Ok(content) => {
+                if content.is_empty() {
+                    Err(Null)
+                } else {
+                    Ok(content)
+                }
+            }
+            Err(_) => Err(Null),
         }
     }
 }
