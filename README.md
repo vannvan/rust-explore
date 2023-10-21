@@ -1,6 +1,6 @@
 ## 关于
 
---
+`Rust`对于`JavaScript`用户来说确实相当于右撇子强行使用左手写字一般，但，挑战一下吧！
 
 ## 程序清单
 
@@ -17,4 +17,118 @@
 
 ## 资料分享
 
---
+## 基础
+
+### Rust Wiki
+
+[https://rustwiki.org/](https://rustwiki.org/)
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/1553840/1691820126088-2ce665a8-f347-4316-a39d-01836a6d8567.png#averageHue=%23f9f9f8&clientId=uc2ff3882-4e86-4&from=paste&height=485&id=ud672d720&originHeight=969&originWidth=1906&originalType=binary&ratio=2&rotation=0&showTitle=false&size=180157&status=done&style=none&taskId=u30434ce8-1d06-4157-8ae5-ca40346207a&title=&width=953)
+
+### Rust语言圣经 ⭐️
+
+[https://course.rs/basic/variable.html](https://course.rs/basic/variable.html)
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/1553840/1692515330180-0497b014-e66e-43cd-9772-ba20d0bcf79d.png#averageHue=%23f4f3f1&clientId=u6763b09c-8cbe-4&from=paste&height=484&id=u5c803b2a&originHeight=967&originWidth=1914&originalType=binary&ratio=2&rotation=0&showTitle=false&size=619627&status=done&style=none&taskId=u601f963e-b52c-4151-a75b-ee396486cb6&title=&width=957)
+
+### Rusty bool(锈书) ⭐️
+
+[https://rusty.course.rs/daily-dev.html](https://rusty.course.rs/daily-dev.html)
+>
+> - 学完 Rust 后，还做了些题，接下可以做些什么？
+> - 需要找一个依赖，但是去哪里找？哪些比较好用？哪些有坑？愁啊
+> - 要访问一个文件，哎，但记不住代码，要不百度或谷歌一下吧，最后发现结果往往不尽如人意
+
+而 Rusty Book 就是帮助大家解决这些问题的。
+本书适合所有程度的 Rust 开发者使用:
+
+- 新手用来了解 Rust 的常用库和常用代码片段
+- 老手在写代码时，可以直接用来复制粘贴，大幅提升工作效率
+
+### Rust程序设计语言
+>
+> [https://kaisery.github.io/trpl-zh-cn/title-page.html](https://kaisery.github.io/trpl-zh-cn/title-page.html)
+
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/1553840/1691660115572-77aac3db-0f1d-49ae-9bb4-b9e8ac396175.png#averageHue=%23c6c4be&clientId=uc3566c60-925a-4&from=paste&height=483&id=uce8d9003&originHeight=966&originWidth=1920&originalType=binary&ratio=2&rotation=0&showTitle=false&size=254778&status=done&style=none&taskId=ua6afa035-ff9e-4551-8372-4545b5d623f&title=&width=960)
+
+### Rust Cookbook
+
+[https://rustwiki.org/zh-CN/rust-cookbook/web/clients/apis.html](https://rustwiki.org/zh-CN/rust-cookbook/web/clients/apis.html)
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/1553840/1692668860930-716c4c9b-06a9-4e09-aa50-65b658836e58.png#averageHue=%23f7f6f6&clientId=u143c8828-f05f-4&from=paste&height=880&id=u403d6a02&originHeight=1760&originWidth=3360&originalType=binary&ratio=2&rotation=0&showTitle=false&size=451557&status=done&style=none&taskId=u5fb06365-03b6-4fd6-98d0-c04f5c50f07&title=&width=1680)
+
+### 标准库-std
+
+[https://rustwiki.org/zh-CN/std/index.html#primitives](https://rustwiki.org/zh-CN/std/index.html#primitives)  标准库
+
+### 通过例子学Rust
+>
+> [https://github.com/rust-lang-cn/rust-by-example-cn](https://github.com/rust-lang-cn/rust-by-example-cn) Rust By Example 中文版(包含在线代码编辑器)
+
+> [https://rustwiki.org/zh-CN/rust-by-example/](https://rustwiki.org/zh-CN/rust-by-example/) 通过例子学 Rust 中文版
+
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/1553840/1691660196000-01e8bf3e-4ce6-4493-bd82-f092dbd733f0.png#averageHue=%23f4f4f4&clientId=uc3566c60-925a-4&from=paste&height=876&id=u28f29bc5&originHeight=1752&originWidth=3360&originalType=binary&ratio=2&rotation=0&showTitle=false&size=692481&status=done&style=none&taskId=ua1a5be69-5f88-4c09-9328-ae832aec3da&title=&width=1680)
+
+### google的教程
+
+[https://google.github.io/comprehensive-rust/](https://google.github.io/comprehensive-rust/)
+[https://google.github.io/comprehensive-rust/zh-CN/](https://google.github.io/comprehensive-rust/zh-CN/)
+
+### CLI教程
+
+[https://rust-cli.github.io/book/index.html](https://rust-cli.github.io/book/index.html)
+
+### Rust资源列表
+
+[https://rustrepo.com/](https://rustrepo.com/)
+
+## 进阶
+
+### 面向前端的资源
+>
+> [https://github.com/i5ting/learn-rust-for-fe](https://github.com/i5ting/learn-rust-for-fe) 面向前端的rust学习资源
+
+### 从Node到Rust
+>
+> [https://candle.dev/blog/javascript-to-rust/javascript-to-rust-day-1-rustup/](https://candle.dev/blog/javascript-to-rust/javascript-to-rust-day-1-rustup/)
+> [https://zhuanlan.zhihu.com/p/455056963](https://zhuanlan.zhihu.com/p/455056963) 中文翻译
+
+### awesome
+
+[https://github.com/rust-boom/rust-boom](https://github.com/rust-boom/rust-boom?mode=light) rust awesome（资源）
+
+### 性能
+
+[https://jbecker.dev/research/on-writing-performant-rust](https://jbecker.dev/research/on-writing-performant-rust)   最大化Rust代码的性能
+
+## 综合
+
+### 官方
+
+[https://www.rust-lang.org/zh-CN/](https://www.rust-lang.org/zh-CN/)
+
+### 中文资源
+>
+> [https://github.com/rust-lang-cn](https://github.com/rust-lang-cn) 中文学习资源
+> [https://github.com/rust-boom/rust-boom](https://github.com/rust-boom/rust-boom)  rust awesome（资源）. 💥
+
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/1553840/1691660122983-fcdb6148-c808-4825-afdd-7d5545a0b516.png#averageHue=%23fefefe&clientId=uc3566c60-925a-4&from=paste&height=876&id=YXK71&originHeight=1752&originWidth=3360&originalType=binary&ratio=2&rotation=0&showTitle=false&size=496217&status=done&style=none&taskId=uf01e2f99-2b74-4017-b318-c40f56c7dd8&title=&width=1680)
+
+### 开源杂志
+
+[Rust语言开源杂志（2021）](https://rustmagazine.github.io/rust_magazine_2021/index.html) ⭐️⭐️
+
+### 中文社区
+
+[https://rustcc.cn/](https://rustcc.cn/) Rust中文社区
+
+### 插件源
+
+[https://crates.io/](https://crates.io/)
+
+### IDE
+
+- [RustRover – JetBrains 出品的独立 Rust IDE | The IntelliJ Rust Blog](https://blog.jetbrains.com/zh-hans/rust/2023/09/13/introducing-rustrover-a-standalone-rust-ide-by-jetbrains/)
+
+### 其它
+
+- [https://github.com/alilleybrinker/langs-in-rust](https://github.com/alilleybrinker/langs-in-rust)   Rust中实现的语言列表
+- [https://lightly.teamcode.com/dashboard](https://lightly.teamcode.com/dashboard)  在线IDE
+- [https://github.com/rust-qt](https://github.com/rust-qt)
