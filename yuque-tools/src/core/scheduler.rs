@@ -31,6 +31,7 @@ pub struct Scheduler;
 impl Scheduler {
     pub async fn start() -> Result<(), &'static str> {
         let cookies = tools::get_local_cookies();
+
         // 没有cookie缓存，进入登录环节
         if cookies.is_empty() {
             match tools::get_user_config() {
@@ -39,31 +40,22 @@ impl Scheduler {
                         println!("user_config: {:?}", user_config);
                     }
                     // 默认使用配置中的账号信息
-                    let mut account = YuqueAccount {
+                    let account = YuqueAccount {
                         username: user_config.username.to_string(),
                         password: user_config.password.to_string(),
                     };
+
                     // 如果配置中缺少字段，就进入询问环节
                     if account.username.is_empty() || account.password.is_empty() {
-                        account = inquiry::ask_user_account();
-                    }
-
-                    match YuqueApi::login(&account.username, &account.password).await {
-                        Ok(_resp) => {
-                            Log::success("登录成功!");
-                            // 接着就开始获取知识库
-                            if let Ok(_books_info) = YuqueApi::get_user_bookstacks().await {
-                                Log::success("获取知识库成功");
-                                Self::handle_inquiry()
-                            }
-                        }
-                        Err(_err) => {
-                            Log::error("登录失败，请检查账号信息是否正确或重试");
-                            process::exit(1)
-                        }
+                        Self::all_manual_start().await;
                     }
                 }
-                Err(err) => Log::error(err),
+                Err(_err) => {
+                    if cfg!(debug_assertions) {
+                        println!("没有配置文件开始问询");
+                    }
+                    Self::all_manual_start().await;
+                }
             }
         } else {
             // 有cookie，不走登录
@@ -79,6 +71,25 @@ impl Scheduler {
             }
         }
         Ok(())
+    }
+
+    /// 所有环节进入问询程序
+    async fn all_manual_start() {
+        let account = &inquiry::ask_user_account();
+        match YuqueApi::login(&account.username, &account.password).await {
+            Ok(_resp) => {
+                Log::success("登录成功!");
+                // 接着就开始获取知识库
+                if let Ok(_books_info) = YuqueApi::get_user_bookstacks().await {
+                    Log::success("获取知识库成功");
+                    Self::handle_inquiry()
+                }
+            }
+            Err(_err) => {
+                Log::error("登录失败，请检查账号信息是否正确或重试");
+                process::exit(1)
+            }
+        }
     }
 
     /// 执行询问程序
