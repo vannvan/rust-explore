@@ -97,6 +97,7 @@ pub mod cache_book {
         /// 用于区分是目录还是文档 DOC TITLE
         pub node_type: String,
         pub uuid: String,
+        #[serde(default)]
         pub child_uuid: String,
         pub parent_uuid: String,
         pub visible: u8,
