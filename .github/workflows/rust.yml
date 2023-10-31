@@ -21,5 +21,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           SRC_DIR: 'yuque-tools'
+          STATIC_LINKING: false
           RUSTTARGET: ${{ matrix.target }}
           EXTRA_FILES: 'README.md LICENSE'
