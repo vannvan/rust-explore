@@ -5,6 +5,9 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+
+
+
 jobs:
   release:
     name: release ${{ matrix.target }}
@@ -12,7 +15,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [x86_64-pc-windows-gnu, x86_64-unknown-linux-musl]
+        include:
+          - target: x86_64-pc-windows-gnu
+            archive: zip
+          - target: x86_64-unknown-linux-musl
+            archive: tar.gz tar.xz tar.zst
+          - target: x86_64-apple-darwin
+            archive: zip
     steps:
       - uses: actions/checkout@master
       - name: Compile and release
@@ -20,7 +29,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          SRC_DIR: 'yuque-tools'
-          STATIC_LINKING: false
           RUSTTARGET: ${{ matrix.target }}
-          EXTRA_FILES: 'README.md LICENSE'
+          ARCHIVE_TYPES: ${{ matrix.archive }}
