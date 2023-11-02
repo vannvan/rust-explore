@@ -39,7 +39,7 @@ impl Scheduler {
                     if cfg!(debug_assertions) {
                         println!("user_config: {:?}", user_config);
                     }
-                    // 默认使用配置中的账号信息
+                    // 尝试默认使用配置中的账号信息
                     let account = YuqueAccount {
                         username: user_config.username.to_string(),
                         password: user_config.password.to_string(),
@@ -47,29 +47,17 @@ impl Scheduler {
 
                     // 如果配置中缺少账户信息，就进入询问环节
                     if account.username.is_empty() || account.password.is_empty() {
-                        Self::all_manual_start().await;
+                        Self::start_program(None).await;
                     } else {
-                        match YuqueApi::login(&account.username, &account.password).await {
-                            Ok(_resp) => {
-                                Log::success("登录成功!");
-                                // 接着就开始获取知识库
-                                if let Ok(_books_info) = YuqueApi::get_user_bookstacks().await {
-                                    Log::success("获取知识库成功");
-                                    Self::handle_inquiry()
-                                }
-                            }
-                            Err(_err) => {
-                                Log::error("登录失败，请检查账号信息是否正确或重试");
-                                process::exit(1)
-                            }
-                        }
+                        // 填入用户的配置进入后面的流程
+                        Self::start_program(Some(account)).await;
                     }
                 }
                 Err(_err) => {
                     if cfg!(debug_assertions) {
                         println!("没有配置文件开始问询");
                     }
-                    Self::all_manual_start().await;
+                    Self::start_program(None).await;
                 }
             }
         } else {
@@ -89,8 +77,12 @@ impl Scheduler {
     }
 
     /// 所有环节进入问询程序
-    async fn all_manual_start() {
-        let account = &inquiry::ask_user_account();
+    async fn start_program(arg: Option<YuqueAccount>) {
+        let account = match arg {
+            Some(config_account) => config_account,
+            None => inquiry::ask_user_account(),
+        };
+
         match YuqueApi::login(&account.username, &account.password).await {
             Ok(_resp) => {
                 Log::success("登录成功!");

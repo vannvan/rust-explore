@@ -21,8 +21,6 @@ use crate::libs::{
     tools::{gen_timestamp, get_local_cookies, get_user_config},
 };
 
-use super::tools;
-
 #[allow(dead_code)]
 pub fn crawl() {
     //
