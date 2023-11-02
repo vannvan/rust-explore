@@ -45,9 +45,24 @@ impl Scheduler {
                         password: user_config.password.to_string(),
                     };
 
-                    // 如果配置中缺少字段，就进入询问环节
+                    // 如果配置中缺少账户信息，就进入询问环节
                     if account.username.is_empty() || account.password.is_empty() {
                         Self::all_manual_start().await;
+                    } else {
+                        match YuqueApi::login(&account.username, &account.password).await {
+                            Ok(_resp) => {
+                                Log::success("登录成功!");
+                                // 接着就开始获取知识库
+                                if let Ok(_books_info) = YuqueApi::get_user_bookstacks().await {
+                                    Log::success("获取知识库成功");
+                                    Self::handle_inquiry()
+                                }
+                            }
+                            Err(_err) => {
+                                Log::error("登录失败，请检查账号信息是否正确或重试");
+                                process::exit(1)
+                            }
+                        }
                     }
                 }
                 Err(_err) => {

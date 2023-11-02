@@ -32,6 +32,10 @@ pub struct GlobalConfig {
     pub yuque_book_stacks: String,
     /// 某个知识库的信息
     pub yuque_books_info: String,
+    /// 空间知识库
+    pub yuque_space_books_info: String,
+    /// 协作知识库
+    pub yuque_collab_books_info: String,
     /// 导出md文件
     pub yuque_export_markdown: String,
     /// meta目录
@@ -64,6 +68,8 @@ pub fn load_conf() -> GlobalConfig {
         "yuque_referer": "https://www.yuque.com/login",
         "yuque_login": "/api/accounts/login",
         "yuque_book_stacks": "/api/mine/book_stacks",
+        "yuque_space_books_info":"/api/mine/user_books?user_type=Group",
+        "yuque_collab_books_info":"/api/mine/raw_collab_books",
         "yuque_books_info": "",
         "yuque_export_markdown": "",
         "meta_dir": ".meta",

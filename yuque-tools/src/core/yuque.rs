@@ -19,7 +19,7 @@ use crate::libs::{
     file::File,
     log::Log,
     request::Request,
-    tools::{gen_timestamp, get_cache_user_info},
+    tools::{gen_timestamp, get_cache_user_info, is_personal},
 };
 use url::form_urlencoded::parse;
 
@@ -80,65 +80,57 @@ impl YuqueApi {
         }
     }
 
-    /// 获取知识库列表数据
+    /// 获取个人知识库/团队知识库列表数据
     pub async fn get_user_bookstacks() -> Result<Value, bool> {
+        let is_personal = is_personal();
         Log::info("开始获取知识库");
-        if let Ok(resp) = Request::get(&GLOBAL_CONFIG.yuque_book_stacks).await {
+        let target_api = if is_personal {
+            &GLOBAL_CONFIG.yuque_book_stacks
+        } else {
+            &GLOBAL_CONFIG.yuque_space_books_info
+        };
+
+        if cfg!(debug_assertions) {
+            println!("获取知识库地址：{}", target_api);
+        }
+
+        if let Ok(resp) = Request::get(&target_api).await {
             if resp.get("data").is_some() {
-                let mut books_data = vec![];
                 let data_wrap = resp.get("data").unwrap();
-                let current_login = get_cache_user_info().unwrap().login.to_string();
-
-                for item in data_wrap.as_array().unwrap() {
-                    for sub_item in item.to_owned().get("books").unwrap().as_array().unwrap() {
-                        let current_book_user_login =
-                            sub_item.get("user").unwrap().get("login").unwrap();
-                        if cfg!(debug_assertions) {
-                            println!(
-                                "当前登录用户 {}, 当前知识库用户 {},{}",
-                                current_login.to_string(),
-                                current_book_user_login,
-                                current_login.to_string() == current_book_user_login.to_owned()
-                            );
-                        }
-
-                        // 知识库所属
-                        let book_type = if current_login == current_book_user_login.to_owned() {
-                            "owner"
-                        } else {
-                            "collab"
-                        };
-
-                        let book_info = json!({
-                          "name": sub_item.get("name"),
-                          "slug": sub_item.get("slug"),
-                          "stack_id": sub_item.get("stack_id"),
-                          "book_id": sub_item.get("id"),
-                          "user_login": sub_item.get("user").unwrap().get("login"),
-                          "user_name": sub_item.get("user").unwrap().get("name"),
-                          "book_type": book_type
-                        });
-
-                        books_data.push(book_info)
-                    }
-                }
-
                 let f = File::new();
 
-                for item in &mut books_data {
-                    let user_login = item["user_login"].as_str().unwrap_or_default();
-                    let slug = item["slug"].as_str().unwrap_or_default();
-                    let url = format!("/{}/{}", user_login, slug);
-                    let ss = Self::get_book_docs_info(&url).await;
+                let filtered_books_data = if is_personal {
+                    let docs = Self::gen_books_data_for_cache(&data_wrap).await;
+                    docs
+                } else {
+                    let mut temp_books_data: Vec<Value> = vec![];
+                    // 构造一个 [{books:[...]}] 结构的数据
+                    let books_info = json!({ "books": data_wrap });
+                    temp_books_data.push(books_info);
 
-                    if let Ok(book_toc) = ss {
-                        item["docs"] = book_toc;
+                    let docs =
+                        Self::gen_books_data_for_cache(&serde_json::Value::Array(temp_books_data))
+                            .await;
+
+                    docs
+                };
+
+                let mut merged_books_data = vec![];
+
+                if let Ok(collab_books) = Self::get_collab_books().await {
+                    let collab_books_array = collab_books.to_owned();
+                    for book in collab_books_array.as_array().unwrap() {
+                        merged_books_data.push(book.clone());
                     }
+                };
+
+                for book in filtered_books_data.as_array().unwrap() {
+                    merged_books_data.push(book.clone());
                 }
 
                 let books_info = json!({
                     "expire_time": gen_timestamp() + GLOBAL_CONFIG.local_expire,
-                    "books_info": books_data
+                    "books_info": merged_books_data
                 });
 
                 // 写入知识库信息文件
@@ -165,14 +157,100 @@ impl YuqueApi {
         }
     }
 
-    /// 获取知识库下文档数据
+    /// 获取协作知识库数据
+    pub async fn get_collab_books() -> Result<Value, bool> {
+        if let Ok(resp) = Request::get(&GLOBAL_CONFIG.yuque_collab_books_info).await {
+            if resp.get("data").is_some() {
+                let data_wrap = resp.get("data").unwrap();
+                let mut temp_books_data: Vec<Value> = vec![];
+                // 构造一个 [{books:[...]}] 结构的数据
+                let books_info = json!({ "books": data_wrap });
+                temp_books_data.push(books_info);
+
+                let docs =
+                    Self::gen_books_data_for_cache(&serde_json::Value::Array(temp_books_data))
+                        .await;
+
+                // println!("协作知识库：{:?}", docs);
+                Ok(docs)
+            } else {
+                Err(false)
+            }
+        } else {
+            Err(false)
+        }
+    }
+
+    /// 生成适配缓存结构的知识库数据
+    pub async fn gen_books_data_for_cache(book_info: &Value) -> Value {
+        let mut target_books_data = vec![];
+
+        let current_login = get_cache_user_info().unwrap().login.to_string();
+
+        for item in book_info.as_array().unwrap() {
+            for sub_item in item.to_owned().get("books").unwrap().as_array().unwrap() {
+                let current_book_user_login = sub_item.get("user").unwrap().get("login").unwrap();
+                if cfg!(debug_assertions) {
+                    println!(
+                        "当前登录用户 {}, 当前知识库用户 {},{}",
+                        current_login.to_string(),
+                        current_book_user_login,
+                        current_login.to_string() == current_book_user_login.to_owned()
+                    );
+                }
+
+                // 知识库所属
+                let book_type = if current_login == current_book_user_login.to_owned() {
+                    "owner"
+                } else {
+                    "collab"
+                };
+
+                let book_info = json!({
+                  "name": sub_item.get("name"),
+                  "slug": sub_item.get("slug"),
+                  "stack_id": sub_item.get("stack_id"),
+                  "book_id": sub_item.get("id"),
+                  "user_login": sub_item.get("user").unwrap().get("login"),
+                  "user_name": sub_item.get("user").unwrap().get("name"),
+                  "book_type": book_type
+                });
+
+                target_books_data.push(book_info)
+            }
+        }
+
+        for item in &mut target_books_data {
+            let user_login = item["user_login"].as_str().unwrap_or_default();
+            let slug = item["slug"].as_str().unwrap_or_default();
+            let url = format!("/{}/{}", user_login, slug);
+            let toc = Self::get_book_docs_info(&url).await;
+
+            if let Ok(book_toc) = toc {
+                item["docs"] = book_toc;
+            }
+        }
+
+        // println!("{:?}", target_books_data);
+        // 过滤掉可能没有文档的知识库
+        let filtered_books_data: Vec<serde_json::Value> = target_books_data
+            .into_iter()
+            .filter(|item| !item["docs"].is_null())
+            .collect();
+
+        serde_json::Value::Array(filtered_books_data)
+    }
+
+    /// 爬取知识库下文档数据
     pub async fn get_book_docs_info(repo: &str) -> Result<Value, Null> {
         if let Ok(resp) = Self::crawl_book_toc_info(repo).await {
-            let sss = resp.get("book").unwrap().get("toc").unwrap();
-            Ok(sss.clone())
-        } else {
-            Err(Null)
+            if let Some(book) = resp.get("book") {
+                if let Some(toc) = book.get("toc") {
+                    return Ok(toc.clone());
+                }
+            }
         }
+        Err(Null)
     }
 
     /// 爬取知识库

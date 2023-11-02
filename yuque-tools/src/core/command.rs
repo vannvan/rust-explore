@@ -67,6 +67,8 @@ impl YCommand {
             toc_range: vec![],
             skip: true,
             line_break: true,
+            host: "".to_string(),
+            output: "".to_string(),
         };
 
         // 格式化json文件

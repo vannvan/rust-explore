@@ -28,6 +28,7 @@ url = "2.0"
 inquire = "0.6"
 openssl = { version = "0.10", features = ["vendored"] }
 progress_bar = "1.0.5"
+utf8_slice = "1.0.0"
 
 
 [build-dependencies]

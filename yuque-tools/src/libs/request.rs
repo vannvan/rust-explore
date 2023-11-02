@@ -18,8 +18,10 @@ use crate::libs::{
     constants::GLOBAL_CONFIG,
     file::File,
     log::Log,
-    tools::{gen_timestamp, get_local_cookies},
+    tools::{gen_timestamp, get_local_cookies, get_user_config},
 };
+
+use super::tools;
 
 #[allow(dead_code)]
 pub fn crawl() {
@@ -31,17 +33,31 @@ pub struct Request {
 }
 
 impl Request {
+    // 获取匹配的host，如果是个人就用配置，如果是用户指定的就用指定的
+    fn get_match_host() -> String {
+        if let Ok(user_config) = get_user_config() {
+            // user_config.host
+            if user_config.host.is_empty() {
+                GLOBAL_CONFIG.yuque_host.clone()
+            } else {
+                user_config.host
+            }
+        } else {
+            GLOBAL_CONFIG.yuque_host.clone()
+        }
+    }
+
     fn request_header() -> HeaderMap {
         // 组装header
         let mut headers = HeaderMap::new();
         headers.insert("Content-Type", "application/json".parse().unwrap());
         headers.insert("referer", GLOBAL_CONFIG.yuque_referer.parse().unwrap());
-        headers.insert("origin", GLOBAL_CONFIG.yuque_host.parse().unwrap());
+        headers.insert("origin", Self::get_match_host().parse().unwrap());
         return headers;
     }
     /// 返回JSON
     pub async fn get(url: &str) -> Result<HashMap<String, Value>, reqwest::Error> {
-        let target_url = GLOBAL_CONFIG.yuque_host.clone() + &url;
+        let target_url = Self::get_match_host().clone() + &url;
         if cfg!(debug_assertions) {
             println!("GET-> {}", &target_url);
         }
@@ -69,7 +85,7 @@ impl Request {
 
     /// 返回响应文本
     pub async fn get_text(url: &str) -> Result<String, reqwest::Error> {
-        let target_url = GLOBAL_CONFIG.yuque_host.clone() + &url;
+        let target_url = Self::get_match_host().clone() + &url;
         if cfg!(debug_assertions) {
             println!("GET-> {}", &target_url);
         }
@@ -101,7 +117,7 @@ impl Request {
     ) -> Result<HashMap<String, Value>, reqwest::Error> {
         let client = reqwest::Client::new();
         let header = Self::request_header();
-        let target_url = GLOBAL_CONFIG.yuque_host.clone() + &url;
+        let target_url = Self::get_match_host().clone() + &url;
         let login_reg = Regex::new("login");
         if cfg!(debug_assertions) {
             println!("POST-> {}", &target_url);

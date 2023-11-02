@@ -8,6 +8,7 @@
  */
 
 use std::process;
+use utf8_slice::{self, slice};
 
 use inquire::{Confirm, InquireError, MultiSelect, Password, PasswordDisplayMode, Text};
 
@@ -32,21 +33,30 @@ pub fn ask_user_toc_options() -> MutualAnswer {
             }
 
             // 询问知识库
-            let mut options: Vec<&str> = vec![];
-
+            let mut options: Vec<String> = vec![];
             for item in &books_info {
-                options.push(&item.name)
+                // 区分个人知识库还是团队知识库/协作知识库
+                // options.push(item.name.to_string());
+                if item.book_type == "owner" {
+                    options.push(format!("👤 {}", &item.name));
+                } else {
+                    options.push(format!("👥 {}", &item.name));
+                }
             }
 
             // 选择知识库
-            let books_ans: Result<Vec<&str>, InquireError> =
+            let books_ans: Result<Vec<String>, InquireError> =
                 MultiSelect::new("请选择知识库", options)
                     .with_help_message("空格选中/取消选中，⬆ ⬇ 键移动选择")
                     .prompt();
-            // 因为choice是 Vec<&str> 类型，所以要转换一下
             match books_ans {
-                Ok(choice) => answer.toc_range = choice.iter().map(|s| s.to_string()).collect(),
-                Err(_) => panic!("选择出错，请重新尝试"),
+                Ok(choice) => {
+                    answer.toc_range = choice
+                        .iter()
+                        .map(|s| slice(s, 2, s.len()).to_string())
+                        .collect()
+                }
+                Err(_) => panic!("未选择知识库，程序退出"),
             }
 
             // 确认是否跳过本地文件
@@ -57,7 +67,7 @@ pub fn ask_user_toc_options() -> MutualAnswer {
             match skip_ans {
                 Ok(true) => answer.skip = true,
                 Ok(false) => answer.skip = false,
-                Err(_) => panic!("选择出错，请重新尝试"),
+                Err(_) => panic!("选择出错，程序退出"),
             }
 
             // 确认是否保留语雀换行标识
@@ -69,11 +79,11 @@ pub fn ask_user_toc_options() -> MutualAnswer {
             match lb_ans {
                 Ok(true) => answer.line_break = true,
                 Ok(false) => answer.line_break = false,
-                Err(_) => panic!("选择出错，请重新尝试"),
+                Err(_) => panic!("选择出错，程序退出"),
             }
         }
         Err(_) => {
-            Log::error("知识库文件读取失败,退出程序");
+            Log::error("知识库文件读取失败，程序退出");
             process::exit(1);
         }
     }
@@ -90,7 +100,7 @@ pub fn ask_user_account() -> YuqueAccount {
     let username = Text::new("yuque username:").prompt();
     match username {
         Ok(username) => account.username = username,
-        Err(_) => println!("An error happened when asking for your name, try again later."),
+        Err(_) => panic!("username 填写出错，程序退出"),
     }
 
     let password = Password::new("yuque password:")
@@ -101,7 +111,7 @@ pub fn ask_user_account() -> YuqueAccount {
     match password {
         Ok(password) => account.password = password,
         Err(_) => {
-            println!("An error happened when asking for your password, try again later.")
+            panic!("password 填写出错，程序退出");
         }
     }
     account

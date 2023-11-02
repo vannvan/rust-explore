@@ -40,6 +40,12 @@ pub struct UserCliConfig {
     pub skip: bool,
     #[serde(default = "default_as_true")]
     pub line_break: bool,
+    #[serde(default)]
+    /// 自定义域名，只有团队知识库才需要
+    pub host: String,
+    #[serde(default)]
+    /// 自定义输出目录
+    pub output: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

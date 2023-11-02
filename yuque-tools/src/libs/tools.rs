@@ -114,3 +114,15 @@ pub fn get_top_level_toc_from_toc_range(toc_range: &Vec<String>) -> Vec<String> 
         .collect::<Vec<_>>();
     toc_range.clone()
 }
+
+/// 是否是要导出个人知识库
+pub fn is_personal() -> bool {
+    if let Ok(user_config) = get_user_config() {
+        if user_config.host.is_empty() {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    true
+}
