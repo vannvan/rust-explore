@@ -26,4 +26,5 @@ jobs:
           SRC_DIR: yuque-tools
         with:
           RUSTTARGET: ${{ matrix.target }}
+          STATIC_LINKING: false
           ARCHIVE_TYPES: ${{ matrix.archive }}
