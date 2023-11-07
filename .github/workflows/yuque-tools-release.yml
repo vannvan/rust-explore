@@ -68,7 +68,6 @@ jobs:
           path: |
             ytool-*.zip
             ytool-*.tar.gz
-        if: github.ref == 'refs/tags/test-release'
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v1
         with:
