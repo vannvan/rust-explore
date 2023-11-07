@@ -44,6 +44,7 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: '--locked --release'
           strip: true
+
       - name: Package as archive
         shell: bash
         run: |
@@ -58,6 +59,7 @@ jobs:
             tar czvf ../../../${{ matrix.platform.name }} ${{ matrix.platform.bin }}
           fi
           cd -
+          ls
       - name: Generate SHA-256
         if: matrix.platform.os == 'macOS-latest'
         run: shasum -a 256 ${{ matrix.platform.name }}
@@ -68,6 +70,7 @@ jobs:
           path: |
             ytool-*.zip
             ytool-*.tar.gz
+
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v1
         with:
