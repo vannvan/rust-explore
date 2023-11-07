@@ -58,8 +58,10 @@ async fn get_html() -> Result<(), reqwest::Error> {
 
 async fn get_window() {
     let response = reqwest::get("https://meitulu.me/item/4756.html")
+        .await
         .unwrap()
         .text()
+        .await
         .unwrap();
 
     let document = scraper::Html::parse_document(&response);

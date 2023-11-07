@@ -16,3 +16,4 @@ yuque.config.json
 **/docs/*
 **/dev/*
 .idea
+.vscode
