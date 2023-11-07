@@ -15,23 +15,20 @@ jobs:
             bin: ytool
             name: ytool-FreeBSD-x86_64.tar.gz
             command: build
-            skip_tests: true
 
           - release_for: Windows-x86_64
             os: windows-latest
             target: x86_64-pc-windows-msvc
             bin: ytool.exe
             name: ytool-Windows-x86_64.zip
-            command: both
-            skip_tests: true
+            command: build
 
           - release_for: macOS-x86_64
             os: macOS-latest
             target: x86_64-apple-darwin
             bin: ytool
             name: ytool-Darwin-x86_64.tar.gz
-            command: both
-            skip_tests: true
+            command: build
 
             # more release targets here ...
 
@@ -47,5 +44,3 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: '--locked --release'
           strip: true
-
-    # more packaging stuff goes here ...
