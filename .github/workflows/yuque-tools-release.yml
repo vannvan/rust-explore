@@ -1,6 +1,6 @@
 on:
   release:
-    types: [created]
+    types: [created,edited]
   push:
     branches: ['main']
 
@@ -28,14 +28,14 @@ jobs:
             os: macOS-latest
             target: x86_64-apple-darwin
             bin: ytool
-            name: ytool-Darwin-x86_64.tar.gz
+            name: ytool-macOS-x86_64.tar.gz
             command: build
 
           - release_for: macOS-aarch64
             os: macOS-latest
             target: aarch64-apple-darwin
             bin: ytool
-            name: ytool-Darwin-aarch64.tar.gz
+            name: ytool-macOS-aarch64.tar.gz
             command: build
 
     runs-on: ${{ matrix.platform.os }}
