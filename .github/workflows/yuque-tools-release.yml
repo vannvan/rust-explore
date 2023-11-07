@@ -4,7 +4,6 @@ on:
   push:
     branches: ['main']
 
-
 jobs:
   release:
     name: Release - ${{ matrix.platform.release_for }}
@@ -25,19 +24,19 @@ jobs:
             name: ytool-Windows-x86_64.zip
             command: build
 
-          - os_name: macOS-x86_64
+          - release_for: macOS-x86_64
             os: macOS-latest
             target: x86_64-apple-darwin
             bin: ytool
             name: ytool-Darwin-x86_64.tar.gz
+            command: build
 
-          - os_name: macOS-aarch64
+          - release_for: macOS-aarch64
             os: macOS-latest
             target: aarch64-apple-darwin
             bin: ytool
             name: ytool-Darwin-aarch64.tar.gz
-            skip_tests: true
-           
+            command: build
 
     runs-on: ${{ matrix.platform.os }}
     steps:
