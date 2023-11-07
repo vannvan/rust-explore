@@ -2,6 +2,8 @@
 
 `Rust`对于`JavaScript`用户来说确实相当于右撇子强行使用左手写字一般，但，挑战一下吧！
 
+[![.github/workflows/yuque-tools-release.yml](https://github.com/vannvan/rust-explore/actions/workflows/yuque-tools-release.yml/badge.svg)](https://github.com/vannvan/rust-explore/actions/workflows/yuque-tools-release.yml)
+
 ## 程序清单
 
 - [hello](simple-application/hello) 国际惯例，hello world
