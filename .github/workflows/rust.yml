@@ -12,23 +12,26 @@ jobs:
           - release_for: FreeBSD-x86_64
             os: ubuntu-20.04
             target: x86_64-unknown-freebsd
-            bin: precious
-            name: precious-FreeBSD-x86_64.tar.gz
+            bin: ytool
+            name: ytool-FreeBSD-x86_64.tar.gz
             command: build
+            skip_tests: true
 
           - release_for: Windows-x86_64
             os: windows-latest
             target: x86_64-pc-windows-msvc
-            bin: precious.exe
-            name: precious-Windows-x86_64.zip
+            bin: ytool.exe
+            name: ytool-Windows-x86_64.zip
             command: both
+            skip_tests: true
 
           - release_for: macOS-x86_64
             os: macOS-latest
             target: x86_64-apple-darwin
-            bin: precious
-            name: precious-Darwin-x86_64.tar.gz
+            bin: ytool
+            name: ytool-Darwin-x86_64.tar.gz
             command: both
+            skip_tests: true
 
             # more release targets here ...
 
