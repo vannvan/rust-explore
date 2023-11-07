@@ -41,7 +41,7 @@ jobs:
       - name: Build binary
         uses: houseabsolute/actions-rust-cross@v0
         with:
-          working-directory: $BASE_DIR
+          working-directory: "$BASE_DIR"
           command: ${{ matrix.platform.command }}
           target: ${{ matrix.platform.target }}
           args: '--locked --release'
@@ -52,9 +52,9 @@ jobs:
         run: |
           if [[ "${{ matrix.platform.cross }}" == "false" ]]; then
             # strip doesn't work with non-native binaries on Linux, AFAICT.
-            strip $BASE_DIR/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+            strip "$BASE_DIR"/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
           fi
-          cd $BASE_DIR/target/${{ matrix.platform.target }}/release
+          cd "$BASE_DIR"/target/${{ matrix.platform.target }}/release
           if [[ "${{ matrix.platform.os }}" == "windows-latest" ]]; then
             7z a ../../../${{ matrix.platform.name }} ${{ matrix.platform.bin }}
           else
