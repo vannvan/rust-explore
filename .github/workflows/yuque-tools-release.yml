@@ -49,9 +49,9 @@ jobs:
         run: |
           if [[ "${{ matrix.platform.cross }}" == "false" ]]; then
             # strip doesn't work with non-native binaries on Linux, AFAICT.
-            strip target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+            strip yuque-tools/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
           fi
-          cd target/${{ matrix.platform.target }}/release
+          cd yuque-tools/target/${{ matrix.platform.target }}/release
           if [[ "${{ matrix.platform.os }}" == "windows-latest" ]]; then
             7z a ../../../${{ matrix.platform.name }} ${{ matrix.platform.bin }}
           else
