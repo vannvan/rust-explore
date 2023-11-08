@@ -4,6 +4,8 @@ on:
   push:
     branches: ['main']
 
+  workflow_dispatch:
+
 jobs:
   release:
     name: Release - ${{ matrix.platform.release_for }}
