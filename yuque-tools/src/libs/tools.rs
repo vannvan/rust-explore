@@ -24,7 +24,8 @@ pub fn gen_timestamp() -> u128 {
 pub fn get_local_cookies() -> String {
     let f = File::new();
     if let Ok(cookie_info) = f.read(&GLOBAL_CONFIG.cookies_file) {
-        let config: LocalCookiesInfo = serde_json::from_str(&cookie_info).expect("JSON解析失败");
+        let config: LocalCookiesInfo =
+            serde_json::from_str(&cookie_info).expect("cookies缓存解析失败，请清除缓存后重试");
         if config.expire_time < gen_timestamp() {
             String::new()
         } else {

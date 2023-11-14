@@ -10,6 +10,7 @@
 use regex::Regex;
 use rsa::pkcs8::der::asn1::Null;
 use serde_json::{json, Value};
+use spinoff::{spinners, Color, Spinner};
 
 use std::{collections::HashMap, process};
 
@@ -84,6 +85,10 @@ impl YuqueApi {
     pub async fn get_user_bookstacks() -> Result<Value, bool> {
         let is_personal = is_personal();
         Log::info("开始获取知识库");
+        // loading开始
+        let mut spinner =
+            Spinner::new(spinners::Dots, "正在获取知识库数据，请稍后...", Color::Blue);
+
         let target_api = if is_personal {
             &GLOBAL_CONFIG.yuque_book_stacks
         } else {
@@ -139,7 +144,11 @@ impl YuqueApi {
                         Log::error("文件创建失败");
                         process::exit(1)
                     }
-                    Ok(_) => Ok(books_info),
+                    Ok(_) => {
+                        // loading结束
+                        spinner.stop();
+                        Ok(books_info)
+                    }
                 }
                 // println!("{:?}", serde_json::to_string(&books).unwrap())
             } else {
@@ -148,10 +157,12 @@ impl YuqueApi {
                 }
                 let mut error_info = String::from("获取知识库失败: ");
                 error_info.push_str(resp.get("message").unwrap().to_string().as_str());
+                spinner.stop();
                 Log::error(&error_info);
                 Err(false)
             }
         } else {
+            spinner.stop();
             Log::error("获取知识库失败");
             Err(false)
         }
