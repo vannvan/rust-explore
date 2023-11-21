@@ -52,13 +52,12 @@ impl YuqueApi {
         params.insert("password", _password.to_string());
         params.insert("loginType", "password".to_string());
 
-        if let Ok(resp) = Request::post(&GLOBAL_CONFIG.yuque_login, params).await {
+        if let Ok(resp) = Request::post(&GLOBAL_CONFIG.mobile_login, params).await {
             if resp.get("data").is_some() {
                 let f = File::new();
-
                 let user_info = json!( {
                     "expire_time": gen_timestamp() + GLOBAL_CONFIG.local_expire,
-                    "user_info": resp.get("data").unwrap().get("user").unwrap()
+                    "user_info": resp.get("data").unwrap().get("me").unwrap()
                 });
 
                 match f.write(&GLOBAL_CONFIG.user_info_file, user_info.to_string()) {

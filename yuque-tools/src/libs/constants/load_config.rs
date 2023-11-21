@@ -28,6 +28,8 @@ pub struct GlobalConfig {
     pub yuque_referer: String,
     /// 登录接口
     pub yuque_login: String,
+    pub mobile_login: String,
+    pub user_agent:String,
     /// 知识库列表
     pub yuque_book_stacks: String,
     /// 某个知识库的信息
@@ -67,9 +69,11 @@ pub fn load_conf() -> GlobalConfig {
         "yuque_host": "https://www.yuque.com",
         "yuque_referer": "https://www.yuque.com/login",
         "yuque_login": "/api/accounts/login",
+        "mobile_login": "/api/mobile_app/accounts/login?language=zh-cn",
         "yuque_book_stacks": "/api/mine/book_stacks",
         "yuque_space_books_info":"/api/mine/user_books?user_type=Group",
         "yuque_collab_books_info":"/api/mine/raw_collab_books",
+        "user_agent":"Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/20G81 YuqueMobileApp/1.0.2 (AppBuild/650 Device/Phone Locale/zh-cn Theme/light YuqueType/public)",
         "yuque_books_info": "",
         "yuque_export_markdown": "",
         "meta_dir": ".meta",

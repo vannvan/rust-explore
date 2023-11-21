@@ -51,6 +51,7 @@ impl Request {
         headers.insert("Content-Type", "application/json".parse().unwrap());
         headers.insert("referer", GLOBAL_CONFIG.yuque_referer.parse().unwrap());
         headers.insert("origin", Self::get_match_host().parse().unwrap());
+        headers.insert("User-Agent", GLOBAL_CONFIG.user_agent.parse().unwrap());
         return headers;
     }
     /// 返回JSON
