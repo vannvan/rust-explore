@@ -249,25 +249,13 @@ impl Scheduler {
 
         let mut target_doc_list = flat_docs_list.clone();
 
-        // 文档数量
-        let target_doc_count = target_doc_list.iter().len();
-        // 耗时计算
-        let need_time = target_doc_count * &GLOBAL_CONFIG.duration / 1000;
-
         // 导出报告文件
         let report_file_name_ref: String =
             format!("{}/导出报告.md", &GLOBAL_CONFIG.target_output_dir);
+
         if cfg!(debug_assertions) {
             println!("导出任务配置： {:?}", download_config);
         }
-
-        Log::info(
-            &format!(
-                "开始执行导出任务，共 {} 篇文档，预计需要 {} 秒",
-                target_doc_count, need_time
-            )
-            .to_string(),
-        );
 
         // 二次过滤，因为可能只需要导出知识库下某目录的文档
         // 如果配置知识库范围中有反斜杠就认为有二级目录
@@ -296,6 +284,19 @@ impl Scheduler {
             );
         }
         let _ = f.write(&report_file_name_ref, "# 导出报告\n".to_string());
+
+        // 文档数量
+        let target_doc_count = target_doc_list.iter().len();
+        // 耗时计算
+        let need_time = target_doc_count * &GLOBAL_CONFIG.duration / 1000;
+
+        Log::info(
+            &format!(
+                "开始执行导出任务，共 {} 篇文档，预计需要 {} 秒",
+                target_doc_count, need_time
+            )
+            .to_string(),
+        );
 
         init_progress_bar(target_doc_count);
         set_progress_bar_action("Loading", Color::Blue, Style::Bold);

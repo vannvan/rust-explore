@@ -1,8 +1,10 @@
 on:
   release:
-    types: [created,edited]
-  push:
-    branches: ['main']
+    types: [created, edited]
+  # push:
+  #   branches: ['main']
+
+  workflow_dispatch:
 
 jobs:
   release:
@@ -40,7 +42,6 @@ jobs:
 
     runs-on: ${{ matrix.platform.os }}
     steps:
-      
       - name: Checkout
         uses: actions/checkout@v3
       - name: Build binary
@@ -66,7 +67,7 @@ jobs:
             tar czvf ../../../../${{ matrix.platform.name }} ${{ matrix.platform.bin }}
           fi
           cd -
-          ls
+          ls yuque-tools
       - name: Generate SHA-256
         if: matrix.platform.os == 'macOS-latest'
         run: shasum -a 256 ${{ matrix.platform.name }}
@@ -74,9 +75,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ytool-${{ matrix.platform.os_name }}
-          path: |
-            ytool-*.zip
-            ytool-*.tar.gz
+          path: 'ytool-*'
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v1

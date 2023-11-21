@@ -3,11 +3,7 @@ name = "ytool"
 version = "0.1.0"
 edition = "2021"
 
-
-
-
 # build = "build.rs"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 clap = { version = "4.4.0", features = ["derive"] }
@@ -29,7 +25,7 @@ inquire = "0.6"
 openssl = { version = "0.10", features = ["vendored"] }
 progress_bar = "1.0.5"
 utf8_slice = "1.0.0"
-
+spinoff = "0.8.0"
 
 [build-dependencies]
 winres = "0.1"
