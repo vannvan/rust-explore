@@ -9,6 +9,7 @@
 
 use progress_bar::*;
 use regex::Regex;
+use serde_json::Value;
 use std::process;
 use std::time::Duration;
 use std::{cell::RefCell, thread::sleep};
@@ -29,6 +30,7 @@ use crate::{
 
 pub struct Scheduler;
 impl Scheduler {
+    /// 知识库启动程序
     pub async fn start() -> Result<(), &'static str> {
         let cookies = tools::get_local_cookies();
 
@@ -452,6 +454,113 @@ impl Scheduler {
             })
             .collect()
     }
+
+    /// 团队支持库下载启动程序
+    pub async fn start_grd() -> Result<(), bool> {
+        Log::info("团队资源下载程序开始");
+
+        match tools::get_user_config() {
+            Ok(user_config) => {
+                if cfg!(debug_assertions) {
+                    println!("user_config: {:?}", user_config);
+                }
+                // 尝试默认使用配置中的账号信息
+                let account = YuqueAccount {
+                    username: user_config.username.to_string(),
+                    password: user_config.password.to_string(),
+                };
+
+                match YuqueApi::login(&account.username, &account.password).await {
+                    Ok(_resp) => {
+                        Log::success("登录成功!");
+                        // 接着就开始资源
+                        Self::get_group_resource_base_info().await
+                    }
+                    Err(_err) => {
+                        Log::error("登录失败，请检查账号信息是否正确或重试");
+                        process::exit(1)
+                    }
+                }
+            }
+            Err(_err) => {
+                if cfg!(debug_assertions) {
+                    println!("没有配置文件开始问询");
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// 获取团队资源基础信息
+    async fn get_group_resource_base_info() {
+        Log::info("开始获取团队资源信息");
+
+        match tools::get_user_config() {
+            Ok(user_config) => {
+                if !user_config.host.is_empty() {
+                    if let Ok(source_info) = YuqueApi::get_group_resource_base_info().await {
+                        Log::info("获取团队资源信息成功");
+
+                        for item in source_info.as_array().unwrap() {
+                            if item
+                                .get("target")
+                                .unwrap()
+                                .get("settings")
+                                .unwrap()
+                                .get("resource_enable")
+                                .unwrap()
+                                .as_u64()
+                                == Some(1)
+                            {
+                                Self::get_resource_detail_list(
+                                    item.get("title").unwrap().clone(),
+                                    item.get("target").unwrap().get("login").unwrap().clone(),
+                                    item.get("target_id").unwrap().clone(),
+                                )
+                                .await
+                            }
+                        }
+                    }
+                } else {
+                    Log::error("请配置团队空间域名")
+                }
+            }
+            Err(_) => Log::error("请配置团队空间域名"),
+        }
+    }
+
+    /// 获取团队资源详情
+    async fn get_resource_detail_list(title: Value, base_slug: Value, resource_base_id: Value) {
+        Log::info(format!("开始获取【{}】资源信息, {}", title, base_slug).as_str());
+        if let Ok(source_info) =
+            YuqueApi::get_group_resource_detail_list(&resource_base_id.to_string()).await
+        {
+            Log::info(format!("获取【{}】资源信息成功", title).as_str());
+            if cfg!(debug_assertions) {
+                // println!("资源详情：{:?}", source_info);
+            }
+
+            if source_info.as_array().unwrap().len() > 0 {
+                for item in source_info.as_array().unwrap() {
+                    if item.get("type").unwrap().as_str().eq(&Some("Resource")) {
+                        Log::info(&format!(
+                            "开始获取【{}】资源详情",
+                            item.get("name").unwrap().to_string()
+                        ));
+                        let id = item.get("id").unwrap();
+                        if let Ok(list) =
+                            YuqueApi::get_group_resource_list(&id.to_string(), Some("")).await
+                        {
+                            //
+                        }
+                    }
+                }
+            }
+        } else {
+            Log::error(format!("获取【{}】资源信息失败", title).as_str());
+        }
+    }
 }
 
 #[cfg(test)]
@@ -484,5 +593,32 @@ mod tests {
             line_break: true,
         };
         Scheduler::download_task_pre_construction(answer)
+    }
+    #[tokio::test]
+
+    async fn test_get_group_resource_base_info() {
+        if let Ok(source_info) = YuqueApi::get_group_resource_base_info().await {
+            Log::info("获取团队资源信息成功");
+
+            for item in source_info.as_array().unwrap() {
+                if item
+                    .get("target")
+                    .unwrap()
+                    .get("settings")
+                    .unwrap()
+                    .get("resource_enable")
+                    .unwrap()
+                    .as_u64()
+                    == Some(1)
+                {
+                    Scheduler::get_resource_detail_list(
+                        item.get("title").unwrap().clone(),
+                        item.get("target").unwrap().get("login").unwrap().clone(),
+                        item.get("target_id").unwrap().clone(),
+                    )
+                    .await
+                }
+            }
+        }
     }
 }

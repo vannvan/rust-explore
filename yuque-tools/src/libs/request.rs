@@ -79,7 +79,14 @@ impl Request {
             .send()
             .await?;
 
-        Ok(res.json::<HashMap<String, Value>>().await?)
+        let res_status = res.status().as_u16();
+
+        let resp = res.json::<HashMap<String, Value>>().await?;
+        if res_status != 200 {
+            Log::error(format!("接口请求失败：{}", url).as_str());
+            Log::error(format!("{:?}", resp).as_str());
+        }
+        Ok(resp)
     }
 
     /// 返回响应文本
@@ -131,17 +138,19 @@ impl Request {
 
         let res_status = res.status().as_u16();
 
-        // 暂时先只判断这一个
-        if res_status != 200 {
-            Log::error("授权失败");
-        }
-
         // 如果是登录，就存下cookies
         if login_reg.unwrap().is_match(url) && res_status == 200 {
             Self::save_cookies(&res)
         }
 
-        Ok(res.json::<HashMap<String, Value>>().await?)
+        let resp = res.json::<HashMap<String, Value>>().await?;
+
+        if res_status != 200 {
+            Log::error(format!("接口请求失败：{}", url).as_str());
+            Log::error(format!("{:?}", resp).as_str());
+        }
+
+        Ok(resp)
     }
 
     fn save_cookies(res: &Response) {

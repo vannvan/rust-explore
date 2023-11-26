@@ -29,7 +29,7 @@ pub struct GlobalConfig {
     /// 登录接口
     pub yuque_login: String,
     pub mobile_login: String,
-    pub user_agent:String,
+    pub user_agent: String,
     /// 知识库列表
     pub yuque_book_stacks: String,
     /// 某个知识库的信息
@@ -38,6 +38,8 @@ pub struct GlobalConfig {
     pub yuque_space_books_info: String,
     /// 协作知识库
     pub yuque_collab_books_info: String,
+    /// 团队资源基础信息
+    pub group_resource_base_info: String,
     /// 导出md文件
     pub yuque_export_markdown: String,
     /// meta目录
@@ -73,6 +75,7 @@ pub fn load_conf() -> GlobalConfig {
         "yuque_book_stacks": "/api/mine/book_stacks",
         "yuque_space_books_info":"/api/mine/user_books?user_type=Group",
         "yuque_collab_books_info":"/api/mine/raw_collab_books",
+        "group_resource_base_info":"/api/mine/group_quick_links",
         "user_agent":"Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/20G81 YuqueMobileApp/1.0.2 (AppBuild/650 Device/Phone Locale/zh-cn Theme/light YuqueType/public)",
         "yuque_books_info": "",
         "yuque_export_markdown": "",

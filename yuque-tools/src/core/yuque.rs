@@ -56,7 +56,7 @@ impl YuqueApi {
         if let Ok(resp) = Request::post(&GLOBAL_CONFIG.mobile_login, params).await {
             if resp.get("data").is_some() {
                 let f = File::new();
-                let user_info = json!( {
+                let user_info = json!({
                     "expire_time": gen_timestamp() + GLOBAL_CONFIG.local_expire,
                     "user_info": resp.get("data").unwrap().get("me").unwrap()
                 });
@@ -306,6 +306,94 @@ impl YuqueApi {
                 }
             }
             Err(_) => Err(Null),
+        }
+    }
+
+    // 获取团队资源基本信息
+    pub async fn get_group_resource_base_info() -> Result<Value, bool> {
+        if let Ok(resp) = Request::get(&GLOBAL_CONFIG.group_resource_base_info).await {
+            if resp.get("data").is_some() {
+                // println!("{:?}", resp.get("data").unwrap())
+                Ok(resp.get("data").unwrap().to_owned())
+            } else {
+                Err(false)
+            }
+        } else {
+            Err(false)
+        }
+    }
+
+    /// 获取资源详情列表
+    pub async fn get_group_resource_detail_list(id: &str) -> Result<Value, bool> {
+        let url = format!(
+            "/api/groups/{}/books?q=&archived=include&type=Design%2CResource",
+            id
+        );
+
+        if let Ok(resp) = Request::get(&url).await {
+            if resp.get("data").is_some() {
+                Ok(resp.get("data").unwrap().to_owned())
+            } else {
+                // println!("获取资源详情列表【{}】失败{:?}", id, resp);
+                Err(false)
+            }
+        } else {
+            Err(false)
+        }
+    }
+
+    /// 获取资源列表，需要层层往下找
+    pub async fn get_group_resource_list(id: &str, parent_id: Option<&str>) -> Result<Value, bool> {
+        // let url = format!("/api/resources?book_id={}&offset=0", id);
+
+        let url = match parent_id {
+            Some(parent_id) => {
+                format!(
+                    "/api/resources?book_id={}&parent_id={}&offset=0",
+                    id, parent_id
+                )
+            }
+            None => {
+                format!("/api/resources?book_id={}&offset=0", id)
+            }
+        };
+
+        if let Ok(resp) = Request::get(&url).await {
+            if resp.get("data").is_some() {
+                // Ok(resp.get("data").unwrap().to_owned())
+                let list = resp.get("data");
+                for resource_item in list.unwrap().as_array().unwrap() {
+                    println!(
+                        "资源列表：{:?},type - {:?},book_id - {:?}, id - {:?}",
+                        resource_item.get("filename"),
+                        resource_item.get("type"),
+                        resource_item.get("book_id"),
+                        resource_item.get("id")
+                    );
+                    if resource_item
+                        .get("type")
+                        .unwrap()
+                        .as_str()
+                        .eq(&Some("folder"))
+                    {
+                        if let Ok(sub) = Self::get_group_resource_list(
+                            &resource_item.get("book_id").unwrap().to_string(),
+                            Some(&resource_item.get("id").unwrap().to_string()),
+                        )
+                        .await
+                        {
+                            return Ok(sub.get("data").unwrap().to_owned());
+                            // return Ok(sub.get("data").unwrap().to_owned());
+                        }
+                    }
+                }
+                Ok(resp.get("data").unwrap().to_owned())
+            } else {
+                // println!("获取资源列表【{}】失败{:?}", id, resp);
+                Err(false)
+            }
+        } else {
+            Err(false)
         }
     }
 }
