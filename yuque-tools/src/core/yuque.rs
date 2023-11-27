@@ -7,6 +7,7 @@
  * Copyright (c) https://github.com/vannvan
  */
 
+use async_recursion::async_recursion;
 use regex::Regex;
 use rsa::pkcs8::der::asn1::Null;
 use serde_json::{json, Value};
@@ -20,7 +21,7 @@ use crate::libs::{
     file::File,
     log::Log,
     request::Request,
-    tools::{gen_timestamp, get_cache_user_info, is_personal},
+    tools::{self, gen_timestamp, get_cache_user_info, is_personal},
 };
 use url::form_urlencoded::parse;
 
@@ -343,33 +344,29 @@ impl YuqueApi {
     }
 
     /// 获取资源列表，需要层层往下找
-    pub async fn get_group_resource_list(id: &str, parent_id: Option<&str>) -> Result<Value, bool> {
-        // let url = format!("/api/resources?book_id={}&offset=0", id);
-
-        let url = match parent_id {
-            Some(parent_id) => {
-                format!(
-                    "/api/resources?book_id={}&parent_id={}&offset=0",
-                    id, parent_id
-                )
-            }
-            None => {
-                format!("/api/resources?book_id={}&offset=0", id)
-            }
+    #[async_recursion(?Send)]
+    pub async fn get_group_resource_list(id: &str, parent_id: &str) -> Result<Value, bool> {
+        let url = if !parent_id.is_empty() {
+            format!(
+                "/api/resources?book_id={}&parent_id={}&offset=0",
+                id, parent_id
+            )
+        } else {
+            format!("/api/resources?book_id={}&offset=0", id)
         };
+
+        let skip = tools::get_user_config()
+            .map(|user_config| user_config.skip)
+            .unwrap_or_default();
+
+        let f = File::new();
 
         if let Ok(resp) = Request::get(&url).await {
             if resp.get("data").is_some() {
                 // Ok(resp.get("data").unwrap().to_owned())
                 let list = resp.get("data");
                 for resource_item in list.unwrap().as_array().unwrap() {
-                    println!(
-                        "资源列表：{:?},type - {:?},book_id - {:?}, id - {:?}",
-                        resource_item.get("filename"),
-                        resource_item.get("type"),
-                        resource_item.get("book_id"),
-                        resource_item.get("id")
-                    );
+                    // 如果是文件夹继续往下
                     if resource_item
                         .get("type")
                         .unwrap()
@@ -378,15 +375,61 @@ impl YuqueApi {
                     {
                         if let Ok(sub) = Self::get_group_resource_list(
                             &resource_item.get("book_id").unwrap().to_string(),
-                            Some(&resource_item.get("id").unwrap().to_string()),
+                            &resource_item.get("id").unwrap().to_string(),
                         )
                         .await
                         {
-                            return Ok(sub.get("data").unwrap().to_owned());
-                            // return Ok(sub.get("data").unwrap().to_owned());
+                            if sub.get("data").is_some() {
+                                return Ok(sub.get("data").unwrap().to_owned());
+                            } else {
+                                return Err(false);
+                            }
+                        }
+                    }
+
+                    // 是文件
+                    if resource_item
+                        .get("type")
+                        .unwrap()
+                        .as_str()
+                        .eq(&Some("file"))
+                    {
+                        // println!(
+                        //     "文件：{:?},type - {:?},book_id - {:?}, id - {:?}",
+                        //     resource_item.get("filename"),
+                        //     resource_item.get("type"),
+                        //     resource_item.get("book_id"),
+                        //     resource_item.get("id")
+                        // );
+
+                        let file_name_string = format!(
+                            "{}.{}",
+                            resource_item.get("filename").unwrap().as_str().unwrap(),
+                            resource_item.get("ext").unwrap().as_str().unwrap()
+                        );
+                        let file_full_name = format!(
+                            "{}/{}",
+                            &GLOBAL_CONFIG.target_resource_dir, file_name_string
+                        );
+
+                        if f.exists(&file_full_name) && skip {
+                            Log::info(&format!("{} 跳过", &file_full_name).to_string())
+                        } else {
+                            let url = format!(
+                                "/r/resources/download/{}",
+                                resource_item.get("id").unwrap()
+                            );
+
+                            if let Ok(_res) = Request::download(&url, &file_full_name).await {
+                                Log::success(&format!("{} 下载成功", file_name_string).to_string())
+                            } else {
+                                Log::error(&format!("{} 下载失败", file_name_string).to_string());
+                                process::exit(1)
+                            }
                         }
                     }
                 }
+
                 Ok(resp.get("data").unwrap().to_owned())
             } else {
                 // println!("获取资源列表【{}】失败{:?}", id, resp);

@@ -11,15 +11,16 @@
 use regex::Regex;
 use reqwest::{header::HeaderMap, Response};
 
-use serde_json::{json, Value};
-use std::{collections::HashMap, process};
-
 use crate::libs::{
     constants::GLOBAL_CONFIG,
     file::File,
     log::Log,
     tools::{gen_timestamp, get_local_cookies, get_user_config},
 };
+use serde_json::{json, Value};
+use std::{fs::File as fsFile, io::Write};
+
+use std::{collections::HashMap, process};
 
 #[allow(dead_code)]
 pub fn crawl() {
@@ -153,6 +154,32 @@ impl Request {
         Ok(resp)
     }
 
+    /// 下载文件
+    pub async fn download(url: &str, filename: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let client = reqwest::Client::new();
+        let cookies = get_local_cookies();
+
+        let target_url = Self::get_match_host().clone() + &url;
+        if cfg!(debug_assertions) {
+            println!("下载链接: {}, 文件名称: {}", target_url, filename)
+        }
+        let mut response = client
+            .get(target_url)
+            .header("cookie", cookies)
+            .send()
+            .await?;
+
+        if cfg!(debug_assertions) {
+            println!("下载响应：{:?}", response);
+        }
+
+        let mut dest = fsFile::create(filename)?;
+        while let Some(chunk) = response.chunk().await? {
+            dest.write_all(&chunk)?;
+        }
+        Ok(())
+    }
+
     fn save_cookies(res: &Response) {
         let cookies: String = res
             .headers()
@@ -182,6 +209,26 @@ impl Request {
         if let Err(_) = f.write(&GLOBAL_CONFIG.cookies_file, cookies_info.to_string()) {
             Log::error("缓存暂存失败");
             process::exit(1);
+        }
+    }
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_download() {
+        if let Ok(_res) = Request::download(
+            "https://cdn.nlark.com/yuque/0/2023/png/1553840/1699433154733-638a24c2-3ad0-4427-aae4-851dc4cbebc2.png",
+            "./dev/下载文件.png",
+        )
+        .await
+        {
+            println!("下载成功")
+        } else {
+            println!("下载失败")
         }
     }
 }

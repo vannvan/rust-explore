@@ -459,27 +459,40 @@ impl Scheduler {
     pub async fn start_grd() -> Result<(), bool> {
         Log::info("团队资源下载程序开始");
 
+        let f = File::new();
+
+        if let Err(_) = f.mkdir(&GLOBAL_CONFIG.target_resource_dir) {
+            Log::error("资源目录创建失败");
+            process::exit(1)
+        }
+
+        let cookies = tools::get_local_cookies();
+
         match tools::get_user_config() {
             Ok(user_config) => {
-                if cfg!(debug_assertions) {
-                    println!("user_config: {:?}", user_config);
-                }
-                // 尝试默认使用配置中的账号信息
-                let account = YuqueAccount {
-                    username: user_config.username.to_string(),
-                    password: user_config.password.to_string(),
-                };
+                if cookies.is_empty() {
+                    if cfg!(debug_assertions) {
+                        println!("user_config: {:?}", user_config);
+                    }
+                    // 尝试默认使用配置中的账号信息
+                    let account = YuqueAccount {
+                        username: user_config.username.to_string(),
+                        password: user_config.password.to_string(),
+                    };
 
-                match YuqueApi::login(&account.username, &account.password).await {
-                    Ok(_resp) => {
-                        Log::success("登录成功!");
-                        // 接着就开始资源
-                        Self::get_group_resource_base_info().await
+                    match YuqueApi::login(&account.username, &account.password).await {
+                        Ok(_resp) => {
+                            Log::success("登录成功!");
+                            // 接着就开始资源
+                            Self::get_group_resource_base_info().await
+                        }
+                        Err(_err) => {
+                            Log::error("登录失败，请检查账号信息是否正确或重试");
+                            process::exit(1)
+                        }
                     }
-                    Err(_err) => {
-                        Log::error("登录失败，请检查账号信息是否正确或重试");
-                        process::exit(1)
-                    }
+                } else {
+                    Self::get_group_resource_base_info().await
                 }
             }
             Err(_err) => {
@@ -549,10 +562,17 @@ impl Scheduler {
                             item.get("name").unwrap().to_string()
                         ));
                         let id = item.get("id").unwrap();
-                        if let Ok(list) =
-                            YuqueApi::get_group_resource_list(&id.to_string(), Some("")).await
+                        if let Ok(_list) =
+                            YuqueApi::get_group_resource_list(&id.to_string(), "").await
                         {
-                            //
+                            // println!("资源列表{:?}", list)
+                            Log::info(
+                                format!(
+                                    "正在下载【{}】下的资源",
+                                    item.get("name").unwrap().to_string()
+                                )
+                                .as_str(),
+                            )
                         }
                     }
                 }
@@ -595,7 +615,6 @@ mod tests {
         Scheduler::download_task_pre_construction(answer)
     }
     #[tokio::test]
-
     async fn test_get_group_resource_base_info() {
         if let Ok(source_info) = YuqueApi::get_group_resource_base_info().await {
             Log::info("获取团队资源信息成功");

@@ -48,6 +48,8 @@ pub struct GlobalConfig {
     pub user_cli_config_file: String,
     /// 文档输出目录
     pub target_output_dir: String,
+    /// 资源输出目录
+    pub target_resource_dir: String,
     /// cookies_file
     pub cookies_file: String,
     /// 缓存的用户信息
@@ -81,6 +83,7 @@ pub fn load_conf() -> GlobalConfig {
         "yuque_export_markdown": "",
         "meta_dir": ".meta",
         "target_output_dir": "./docs",
+        "target_resource_dir":"./resources",
         "user_cli_config_file": "yuque.config.json",
         "cookies_file": ".meta/cookies.json",
         "user_info_file": ".meta/user_info.json",

@@ -104,7 +104,7 @@ fn test() {
 
     let cookies = "啊哈哈啊".to_string();
     let dir = ".meta".to_string();
-    let file = dir + "/cookies.json";
+    let file = dir + "/test.json";
     match f.mkdir(".meta") {
         Ok(_) => match f.write(&file, cookies) {
             Ok(_) => {

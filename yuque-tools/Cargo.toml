@@ -26,6 +26,7 @@ openssl = { version = "0.10", features = ["vendored"] }
 progress_bar = "1.0.5"
 utf8_slice = "1.0.0"
 spinoff = "0.8.0"
+async-recursion = "1.0.5"
 
 [build-dependencies]
 winres = "0.1"
