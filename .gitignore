@@ -10,10 +10,13 @@ dist/
 test
 dist
 target
+.vscode
 
+
+# yuque-tools下需要忽略的文件
+*/resources
 yuque.config.json
 **/.meta/*
 **/docs/*
 **/dev/*
 .idea
-.vscode
