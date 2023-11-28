@@ -563,7 +563,7 @@ impl Scheduler {
                         ));
                         let id = item.get("id").unwrap();
                         if let Ok(_list) =
-                            YuqueApi::get_group_resource_list(&id.to_string(), "").await
+                            YuqueApi::get_group_resource_list(&id.to_string(), "", &0).await
                         {
                             // println!("资源列表{:?}", list)
                             Log::info(

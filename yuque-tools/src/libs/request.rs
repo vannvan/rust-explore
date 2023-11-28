@@ -169,9 +169,9 @@ impl Request {
             .send()
             .await?;
 
-        if cfg!(debug_assertions) {
-            println!("下载响应：{:?}", response);
-        }
+        // if cfg!(debug_assertions) {
+        //     println!("下载响应：{:?}", response);
+        // }
 
         let mut dest = fsFile::create(filename)?;
         while let Some(chunk) = response.chunk().await? {

@@ -8,6 +8,7 @@
  */
 
 use std::{
+    fmt::format,
     fs::{self, OpenOptions},
     io::{Error, Read, Write},
     path,
@@ -117,5 +118,18 @@ fn test() {
         Err(_err) => {
             println!("元目录创建失败");
         }
+    }
+}
+
+#[test]
+fn touch_file() {
+    let f = File::new();
+    let dir = "./dev/tmp/".to_string();
+
+    for i in 0..300 {
+        let file = format!("{}/test{}.txt", dir, i);
+        let content = format!("测试内容,{}", i);
+
+        let _ = f.write(&file, content);
     }
 }

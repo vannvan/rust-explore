@@ -343,16 +343,21 @@ impl YuqueApi {
         }
     }
 
-    /// 获取资源列表，需要层层往下找
+    /// 获取资源列表，需要层层往下找，同时要分页，offset为偏移量，每次递增200
     #[async_recursion(?Send)]
-    pub async fn get_group_resource_list(id: &str, parent_id: &str) -> Result<Value, bool> {
+    pub async fn get_group_resource_list(
+        id: &str,
+        parent_id: &str,
+        current_offset: &u8,
+    ) -> Result<Value, bool> {
+        // let mut current_offset = 0;
         let url = if !parent_id.is_empty() {
             format!(
-                "/api/resources?book_id={}&parent_id={}&offset=0",
-                id, parent_id
+                "/api/resources?book_id={}&parent_id={}&offset={}",
+                id, parent_id, current_offset
             )
         } else {
-            format!("/api/resources?book_id={}&offset=0", id)
+            format!("/api/resources?book_id={}&offset={}", id, current_offset)
         };
 
         let skip = tools::get_user_config()
@@ -365,6 +370,12 @@ impl YuqueApi {
             if resp.get("data").is_some() {
                 // Ok(resp.get("data").unwrap().to_owned())
                 let list = resp.get("data");
+                if cfg!(debug_assertions) {
+                    println!(
+                        "资源数量：{:?}",
+                        resp.get("data").unwrap().as_array().unwrap().len()
+                    );
+                }
                 for resource_item in list.unwrap().as_array().unwrap() {
                     // 如果是文件夹继续往下
                     if resource_item
@@ -373,17 +384,18 @@ impl YuqueApi {
                         .as_str()
                         .eq(&Some("folder"))
                     {
-                        if let Ok(sub) = Self::get_group_resource_list(
+                        if let Ok(_sub) = Self::get_group_resource_list(
                             &resource_item.get("book_id").unwrap().to_string(),
                             &resource_item.get("id").unwrap().to_string(),
+                            &current_offset,
                         )
                         .await
                         {
-                            if sub.get("data").is_some() {
-                                return Ok(sub.get("data").unwrap().to_owned());
-                            } else {
-                                return Err(false);
-                            }
+                            // if sub.get("data").is_some() {
+                            //     return Ok(sub.get("data").unwrap().to_owned());
+                            // } else {
+                            //     return Err(false);
+                            // }
                         }
                     }
 
@@ -412,6 +424,10 @@ impl YuqueApi {
                             &GLOBAL_CONFIG.target_resource_dir, file_name_string
                         );
 
+                        if cfg!(debug_assertions) {
+                            println!("文件名称: {}", file_name_string);
+                        }
+
                         if f.exists(&file_full_name) && skip {
                             Log::info(&format!("{} 跳过", &file_full_name).to_string())
                         } else {
@@ -424,8 +440,29 @@ impl YuqueApi {
                                 Log::success(&format!("{} 下载成功", file_name_string).to_string())
                             } else {
                                 Log::error(&format!("{} 下载失败", file_name_string).to_string());
-                                process::exit(1)
+                                // process::exit(1)
                             }
+                        }
+                    }
+                }
+
+                // 分页
+                if resp
+                    .get("meta")
+                    .unwrap()
+                    .get("hasMore")
+                    .unwrap()
+                    .as_bool()
+                    .eq(&Some(true))
+                {
+                    match Self::get_group_resource_list(&id, &parent_id, &(current_offset + 200))
+                        .await
+                    {
+                        Ok(_result) => {
+                            return Ok(resp.get("data").unwrap().to_owned());
+                        }
+                        Err(_error) => {
+                            return Err(false);
                         }
                     }
                 }
