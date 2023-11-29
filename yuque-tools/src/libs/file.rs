@@ -8,7 +8,6 @@
  */
 
 use std::{
-    fmt::format,
     fs::{self, OpenOptions},
     io::{Error, Read, Write},
     path,
@@ -126,10 +125,17 @@ fn touch_file() {
     let f = File::new();
     let dir = "./dev/tmp/".to_string();
 
-    for i in 0..300 {
-        let file = format!("{}/test{}.txt", dir, i);
+    for i in 0..10 {
+        let file = format!("{}/三级{}.txt", dir, i);
         let content = format!("测试内容,{}", i);
 
         let _ = f.write(&file, content);
     }
+}
+
+#[test]
+fn touch_file_and_mkdir() {
+    let path = std::path::Path::new("./home/roger/foo/bar/baz.txt");
+    let prefix = path.parent().unwrap();
+    std::fs::create_dir_all(prefix).unwrap();
 }

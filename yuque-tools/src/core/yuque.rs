@@ -344,13 +344,18 @@ impl YuqueApi {
     }
 
     /// 获取资源列表，需要层层往下找，同时要分页，offset为偏移量，每次递增200
+    /// # Arguments
+    /// * id 对应book_id
+    /// * parent_id
+    /// * current_offset 分页 offset为偏移量，每次递增200
+    /// * folder_name 上级路径
     #[async_recursion(?Send)]
     pub async fn get_group_resource_list(
         id: &str,
         parent_id: &str,
         current_offset: &u8,
+        folder_name: &str,
     ) -> Result<Value, bool> {
-        // let mut current_offset = 0;
         let url = if !parent_id.is_empty() {
             format!(
                 "/api/resources?book_id={}&parent_id={}&offset={}",
@@ -388,6 +393,12 @@ impl YuqueApi {
                             &resource_item.get("book_id").unwrap().to_string(),
                             &resource_item.get("id").unwrap().to_string(),
                             &current_offset,
+                            &format!(
+                                "{}/{}",
+                                folder_name.to_string(),
+                                &resource_item.get("filename").unwrap().to_string()
+                            )
+                            .replace("\"", ""),
                         )
                         .await
                         {
@@ -419,27 +430,54 @@ impl YuqueApi {
                             resource_item.get("filename").unwrap().as_str().unwrap(),
                             resource_item.get("ext").unwrap().as_str().unwrap()
                         );
-                        let file_full_name = format!(
+
+                        // 本地目录路径
+                        let local_folder_string = &format!(
                             "{}/{}",
-                            &GLOBAL_CONFIG.target_resource_dir, file_name_string
+                            GLOBAL_CONFIG.target_resource_dir,
+                            folder_name.to_string(),
                         );
 
+                        // 本地文件路径
+                        let local_file_full_name =
+                            &format!("{}/{}", local_folder_string, file_name_string);
+
+                        // if cfg!(debug_assertions) {
+                        //     println!("目录路径: {}", local_folder_string)
+                        // }
+
                         if cfg!(debug_assertions) {
-                            println!("文件名称: {}", file_name_string);
+                            println!(
+                                "文件路径: {}/{}",
+                                local_folder_string.to_string(),
+                                file_name_string
+                            );
                         }
 
-                        if f.exists(&file_full_name) && skip {
-                            Log::info(&format!("{} 跳过", &file_full_name).to_string())
+                        let _ = f.mkdir(local_folder_string);
+
+                        // let _ = f.write(&local_file_full_name, "".to_string());
+
+                        if f.exists(&local_file_full_name) && skip {
+                            Log::info(&format!("{} 跳过", &local_file_full_name).to_string())
                         } else {
                             let url = format!(
                                 "/r/resources/download/{}",
                                 resource_item.get("id").unwrap()
                             );
 
-                            if let Ok(_res) = Request::download(&url, &file_full_name).await {
-                                Log::success(&format!("{} 下载成功", file_name_string).to_string())
+                            if let Ok(_res) = Request::download(&url, &local_file_full_name).await {
+                                Log::success(
+                                    &format!("{} 下载成功", local_file_full_name).to_string(),
+                                )
                             } else {
-                                Log::error(&format!("{} 下载失败", file_name_string).to_string());
+                                Log::error(
+                                    &format!(
+                                        "{} 下载失败，请确认资源名称是否有特殊字符",
+                                        local_file_full_name
+                                    )
+                                    .to_string(),
+                                );
                                 // process::exit(1)
                             }
                         }
@@ -455,8 +493,13 @@ impl YuqueApi {
                     .as_bool()
                     .eq(&Some(true))
                 {
-                    match Self::get_group_resource_list(&id, &parent_id, &(current_offset + 200))
-                        .await
+                    match Self::get_group_resource_list(
+                        &id,
+                        &parent_id,
+                        &(current_offset + 200),
+                        &folder_name.replace("\"", ""),
+                    )
+                    .await
                     {
                         Ok(_result) => {
                             return Ok(resp.get("data").unwrap().to_owned());

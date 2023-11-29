@@ -507,7 +507,7 @@ impl Scheduler {
 
     /// 获取团队资源基础信息
     async fn get_group_resource_base_info() {
-        Log::info("开始获取团队资源信息");
+        Log::info("开始获取团队资源信息，请确保资源目录和文件名称不包含特殊字符哦～");
 
         match tools::get_user_config() {
             Ok(user_config) => {
@@ -544,8 +544,8 @@ impl Scheduler {
     }
 
     /// 获取团队资源详情
-    async fn get_resource_detail_list(title: Value, base_slug: Value, resource_base_id: Value) {
-        Log::info(format!("开始获取【{}】资源信息, {}", title, base_slug).as_str());
+    async fn get_resource_detail_list(title: Value, _base_slug: Value, resource_base_id: Value) {
+        Log::info(format!("开始获取【{}】资源信息", title.to_string()).as_str());
         if let Ok(source_info) =
             YuqueApi::get_group_resource_detail_list(&resource_base_id.to_string()).await
         {
@@ -562,8 +562,13 @@ impl Scheduler {
                             item.get("name").unwrap().to_string()
                         ));
                         let id = item.get("id").unwrap();
-                        if let Ok(_list) =
-                            YuqueApi::get_group_resource_list(&id.to_string(), "", &0).await
+                        if let Ok(_list) = YuqueApi::get_group_resource_list(
+                            &id.to_string(),
+                            "",
+                            &0,
+                            &item.get("name").unwrap().to_string(),
+                        )
+                        .await
                         {
                             // println!("资源列表{:?}", list)
                             Log::info(
