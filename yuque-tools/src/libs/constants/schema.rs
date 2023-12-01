@@ -127,3 +127,13 @@ pub mod cache_book {
         pub books_info: Vec<BookItem>,
     }
 }
+
+/// 资源列表信息
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ResourceItem {
+    // pub link: String,
+    /// 本地保存的完成路径名称
+    pub target_save_full_path_name: String,
+    /// 资源id
+    pub source_id: String,
+}

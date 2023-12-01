@@ -160,9 +160,9 @@ impl Request {
         let cookies = get_local_cookies();
 
         let target_url = Self::get_match_host().clone() + &url;
-        if cfg!(debug_assertions) {
-            println!("下载链接: {}, 文件名称: {}", target_url, filename)
-        }
+        // if cfg!(debug_assertions) {
+        //     println!("下载链接: {}, 文件名称: {}", target_url, filename)
+        // }
         let mut response = client
             .get(target_url)
             .header("cookie", cookies)

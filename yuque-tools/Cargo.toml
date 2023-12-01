@@ -1,6 +1,6 @@
 [package]
 name = "ytool"
-version = "1.0.2"
+version = "1.0.4"
 edition = "2021"
 
 # build = "build.rs"
@@ -27,6 +27,9 @@ progress_bar = "1.0.5"
 utf8_slice = "1.0.0"
 spinoff = "0.8.0"
 async-recursion = "1.0.5"
+indicatif = "0.17.7"
+terminal-link = "0.1.0"
+
 
 [build-dependencies]
 winres = "0.1"

@@ -7,18 +7,21 @@
  * Copyright (c) https://github.com/vannvan
  */
 
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use progress_bar::*;
 use regex::Regex;
 use serde_json::Value;
 use std::process;
 use std::time::Duration;
 use std::{cell::RefCell, thread::sleep};
+use terminal_link::Link;
 
+use crate::libs::request::Request;
 use crate::{
     core::yuque::YuqueApi,
     libs::{
         constants::{
-            schema::{MutualAnswer, TreeNone, YuqueAccount},
+            schema::{MutualAnswer, ResourceItem, TreeNone, YuqueAccount},
             GLOBAL_CONFIG,
         },
         file::File,
@@ -317,7 +320,11 @@ impl Scheduler {
         }
 
         finalize_progress_bar();
-        Log::success("导出任务执行完毕!");
+        let star_link = Link::new("去点个⭐️吧", "https://github.com/vannvan/rust-explore");
+        Log::success(&format!(
+            "导出任务执行完毕，共导出{}个文档，{}",
+            target_doc_count, star_link
+        ));
     }
 
     /// 获取内容并保存文件
@@ -513,7 +520,9 @@ impl Scheduler {
             Ok(user_config) => {
                 if !user_config.host.is_empty() {
                     if let Ok(source_info) = YuqueApi::get_group_resource_base_info().await {
-                        Log::info("获取团队资源信息成功");
+                        Log::info("获取团队资源基础信息成功");
+                        // 所有资源的扁平列表
+                        let mut all_resource_flat_list: Vec<ResourceItem> = vec![];
 
                         for item in source_info.as_array().unwrap() {
                             if item
@@ -530,10 +539,13 @@ impl Scheduler {
                                     item.get("title").unwrap().clone(),
                                     item.get("target").unwrap().get("login").unwrap().clone(),
                                     item.get("target_id").unwrap().clone(),
+                                    &mut all_resource_flat_list,
                                 )
                                 .await
                             }
                         }
+                        // 正式开始下载
+                        Self::download_all_resource_task(&all_resource_flat_list).await;
                     }
                 } else {
                     Log::error("请配置团队空间域名")
@@ -543,13 +555,76 @@ impl Scheduler {
         }
     }
 
+    /// 正式下载所有资源的任务
+    async fn download_all_resource_task(all_resource_list: &Vec<ResourceItem>) {
+        let skip = tools::get_user_config()
+            .map(|user_config| user_config.skip)
+            .unwrap_or_default();
+
+        let f = File::new();
+
+        let m = MultiProgress::new();
+        let sty = ProgressStyle::with_template(
+            "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}",
+        )
+        .unwrap()
+        .progress_chars("##-");
+
+        let pb = m.add(ProgressBar::new(
+            all_resource_list.len().try_into().unwrap(),
+        ));
+        pb.set_style(sty.clone());
+        // pb.set_message("正在下载，请耐心等待...");
+
+        for item in all_resource_list {
+            let local_file_full_name = &item.target_save_full_path_name;
+            let resource_id = &item.source_id;
+            pb.set_message(format!("{}", local_file_full_name).to_string());
+            if f.exists(&local_file_full_name) && skip {
+                Log::info(&format!("{} 跳过", &local_file_full_name).to_string());
+                pb.inc(1);
+            } else {
+                let url = format!("/r/resources/download/{}", resource_id);
+
+                if let Ok(_res) = Request::download(&url, &local_file_full_name).await {
+                    // Log::success(&format!("{} 下载成功", local_file_full_name).to_string());
+                    pb.inc(1);
+                } else {
+                    Log::error(
+                        &format!(
+                            "{} 下载失败，请确认资源名称是否有特殊字符",
+                            local_file_full_name
+                        )
+                        .to_string(),
+                    );
+                    pb.inc(1);
+                    // process::exit(1)
+                }
+            }
+        }
+        pb.finish_with_message("下载完毕");
+        m.clear().unwrap();
+        let star_link = Link::new("去点个⭐️吧", "https://github.com/vannvan/rust-explore");
+        Log::success(&format!(
+            "团队资源下载任务完成，共下载{}个文件~，{}",
+            all_resource_list.len(),
+            star_link
+        ));
+        // println!("{}", link)
+    }
+
     /// 获取团队资源详情
-    async fn get_resource_detail_list(title: Value, _base_slug: Value, resource_base_id: Value) {
-        Log::info(format!("开始获取【{}】资源信息", title.to_string()).as_str());
+    async fn get_resource_detail_list(
+        title: Value,
+        _base_slug: Value,
+        resource_base_id: Value,
+        resource_list: &mut Vec<ResourceItem>,
+    ) {
+        Log::info(format!("【{}】资源信息开始获取", title.to_string()).as_str());
         if let Ok(source_info) =
             YuqueApi::get_group_resource_detail_list(&resource_base_id.to_string()).await
         {
-            Log::info(format!("获取【{}】资源信息成功", title).as_str());
+            Log::success(format!("【{}】资源信息获取成功", title).as_str());
             if cfg!(debug_assertions) {
                 // println!("资源详情：{:?}", source_info);
             }
@@ -558,7 +633,7 @@ impl Scheduler {
                 for item in source_info.as_array().unwrap() {
                     if item.get("type").unwrap().as_str().eq(&Some("Resource")) {
                         Log::info(&format!(
-                            "开始获取【{}】资源详情",
+                            "【{}】资源列表开始获取",
                             item.get("name").unwrap().to_string()
                         ));
                         let id = item.get("id").unwrap();
@@ -567,23 +642,31 @@ impl Scheduler {
                             "",
                             &0,
                             &item.get("name").unwrap().to_string(),
+                            resource_list,
                         )
                         .await
                         {
-                            // println!("资源列表{:?}", list)
-                            Log::info(
+                            Log::success(
+                                &format!(
+                                    "【{}】资源列表获取成功",
+                                    item.get("name").unwrap().to_string()
+                                )
+                                .to_string(),
+                            )
+                        } else {
+                            Log::error(
                                 format!(
-                                    "正在下载【{}】下的资源",
+                                    "【{}】资源列表获取失败",
                                     item.get("name").unwrap().to_string()
                                 )
                                 .as_str(),
-                            )
+                            );
                         }
                     }
                 }
             }
         } else {
-            Log::error(format!("获取【{}】资源信息失败", title).as_str());
+            Log::error(format!("【{}】资源信息获取失败", title).as_str());
         }
     }
 }
@@ -623,7 +706,7 @@ mod tests {
     async fn test_get_group_resource_base_info() {
         if let Ok(source_info) = YuqueApi::get_group_resource_base_info().await {
             Log::info("获取团队资源信息成功");
-
+            let mut resource_list: Vec<ResourceItem> = vec![];
             for item in source_info.as_array().unwrap() {
                 if item
                     .get("target")
@@ -639,10 +722,16 @@ mod tests {
                         item.get("title").unwrap().clone(),
                         item.get("target").unwrap().get("login").unwrap().clone(),
                         item.get("target_id").unwrap().clone(),
+                        &mut resource_list,
                     )
                     .await
                 }
             }
+
+            println!("资源总数量,{}", resource_list.len());
+
+            Scheduler::download_all_resource_task(&resource_list).await
+            // println!("所有资源列表,{:?}", resource_list);
         }
     }
 }

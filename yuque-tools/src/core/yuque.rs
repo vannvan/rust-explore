@@ -16,12 +16,12 @@ use spinoff::{spinners, Color, Spinner};
 use std::{collections::HashMap, process};
 
 use crate::libs::{
-    constants::GLOBAL_CONFIG,
+    constants::{schema::ResourceItem, GLOBAL_CONFIG},
     encrypt::encrypt_password,
     file::File,
     log::Log,
     request::Request,
-    tools::{self, gen_timestamp, get_cache_user_info, is_personal},
+    tools::{gen_timestamp, get_cache_user_info, is_personal},
 };
 use url::form_urlencoded::parse;
 
@@ -41,7 +41,7 @@ struct BookInfo<'a> {
     pub user: YuqueUser<'a>,
 }
 
-pub struct YuqueApi;
+pub struct YuqueApi {}
 
 #[allow(dead_code)]
 impl YuqueApi {
@@ -355,6 +355,7 @@ impl YuqueApi {
         parent_id: &str,
         current_offset: &u8,
         folder_name: &str,
+        resource_list: &mut Vec<ResourceItem>,
     ) -> Result<Value, bool> {
         let url = if !parent_id.is_empty() {
             format!(
@@ -365,22 +366,12 @@ impl YuqueApi {
             format!("/api/resources?book_id={}&offset={}", id, current_offset)
         };
 
-        let skip = tools::get_user_config()
-            .map(|user_config| user_config.skip)
-            .unwrap_or_default();
-
         let f = File::new();
 
         if let Ok(resp) = Request::get(&url).await {
             if resp.get("data").is_some() {
-                // Ok(resp.get("data").unwrap().to_owned())
                 let list = resp.get("data");
-                if cfg!(debug_assertions) {
-                    println!(
-                        "资源数量：{:?}",
-                        resp.get("data").unwrap().as_array().unwrap().len()
-                    );
-                }
+
                 for resource_item in list.unwrap().as_array().unwrap() {
                     // 如果是文件夹继续往下
                     if resource_item
@@ -399,6 +390,7 @@ impl YuqueApi {
                                 &resource_item.get("filename").unwrap().to_string()
                             )
                             .replace("\"", ""),
+                            resource_list,
                         )
                         .await
                         {
@@ -446,40 +438,23 @@ impl YuqueApi {
                         //     println!("目录路径: {}", local_folder_string)
                         // }
 
-                        if cfg!(debug_assertions) {
-                            println!(
-                                "文件路径: {}/{}",
-                                local_folder_string.to_string(),
-                                file_name_string
-                            );
-                        }
+                        // if cfg!(debug_assertions) {
+                        //     println!(
+                        //         "文件路径: {}/{}",
+                        //         local_folder_string.to_string(),
+                        //         file_name_string
+                        //     );
+                        // }
 
-                        let _ = f.mkdir(local_folder_string);
-
-                        // let _ = f.write(&local_file_full_name, "".to_string());
-
-                        if f.exists(&local_file_full_name) && skip {
-                            Log::info(&format!("{} 跳过", &local_file_full_name).to_string())
-                        } else {
-                            let url = format!(
-                                "/r/resources/download/{}",
-                                resource_item.get("id").unwrap()
-                            );
-
-                            if let Ok(_res) = Request::download(&url, &local_file_full_name).await {
-                                Log::success(
-                                    &format!("{} 下载成功", local_file_full_name).to_string(),
-                                )
-                            } else {
-                                Log::error(
-                                    &format!(
-                                        "{} 下载失败，请确认资源名称是否有特殊字符",
-                                        local_file_full_name
-                                    )
-                                    .to_string(),
-                                );
-                                // process::exit(1)
-                            }
+                        resource_list.push(ResourceItem {
+                            // link: file_name_string,
+                            target_save_full_path_name: local_file_full_name.to_string(),
+                            source_id: resource_item.get("id").unwrap().to_string(),
+                        });
+                        // 创建多级文件夹
+                        if let Err(_) = f.mkdir(local_folder_string) {
+                            Log::error(&format!("{} 资源目录创建失败", local_folder_string));
+                            process::exit(1)
                         }
                     }
                 }
@@ -498,11 +473,12 @@ impl YuqueApi {
                         &parent_id,
                         &(current_offset + 200),
                         &folder_name.replace("\"", ""),
+                        resource_list,
                     )
                     .await
                     {
                         Ok(_result) => {
-                            return Ok(resp.get("data").unwrap().to_owned());
+                            // return Ok(_result.get("data").unwrap().to_owned());
                         }
                         Err(_error) => {
                             return Err(false);
