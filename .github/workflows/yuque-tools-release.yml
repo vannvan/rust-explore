@@ -12,26 +12,26 @@ jobs:
     strategy:
       matrix:
         platform:
-          - release_for: FreeBSD-x86_64
-            os: ubuntu-20.04
-            target: x86_64-unknown-freebsd
-            bin: ytool
-            name: ytool-FreeBSD-x86_64.tar.gz
-            command: build
+          # - release_for: FreeBSD-x86_64
+          #   os: ubuntu-20.04
+          #   target: x86_64-unknown-freebsd
+          #   bin: ytool
+          #   name: ytool-FreeBSD-x86_64.tar.gz
+          #   command: build
 
-          - release_for: Windows-x86_64
-            os: windows-latest
-            target: x86_64-pc-windows-msvc
-            bin: ytool.exe
-            name: ytool-Windows-x86_64.zip
-            command: build
+          # - release_for: Windows-x86_64
+          #   os: windows-latest
+          #   target: x86_64-pc-windows-msvc
+          #   bin: ytool.exe
+          #   name: ytool-Windows-x86_64.zip
+          #   command: build
 
-          - release_for: macOS-x86_64
-            os: macOS-latest
-            target: x86_64-apple-darwin
-            bin: ytool
-            name: ytool-macOS-x86_64.tar.gz
-            command: build
+          # - release_for: macOS-x86_64
+          #   os: macOS-latest
+          #   target: x86_64-apple-darwin
+          #   bin: ytool
+          #   name: ytool-macOS-x86_64.tar.gz
+          #   command: build
 
           - release_for: macOS-aarch64
             os: macOS-latest
@@ -78,11 +78,15 @@ jobs:
           path: 'ytool-*'
 
       - name: Publish GitHub release
-        uses: softprops/action-gh-release@v1
+        # uses: softprops/action-gh-release@v1
+        # with:
+        #   draft: true
+        #   files: 'ytool-*'
+        #   body_path: CHANGELOG.md
+        # env:
+        #   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # if: startsWith( github.ref, 'refs/tags/v' )
+        uses: ncipollo/release-action@v1
         with:
-          draft: true
-          files: 'ytool-*'
-          body_path: CHANGELOG.md
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: startsWith( github.ref, 'refs/tags/v' )
+           artifacts: "ytool-*"
+           bodyFile: "yuque-tools/CHANGELOG.md"
