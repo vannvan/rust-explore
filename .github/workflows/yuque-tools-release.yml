@@ -12,12 +12,12 @@ jobs:
     strategy:
       matrix:
         platform:
-          # - release_for: FreeBSD-x86_64
-          #   os: ubuntu-20.04
-          #   target: x86_64-unknown-freebsd
-          #   bin: ytool
-          #   name: ytool-FreeBSD-x86_64.tar.gz
-          #   command: build
+          - release_for: FreeBSD-x86_64
+            os: ubuntu-20.04
+            target: x86_64-unknown-freebsd
+            bin: ytool
+            name: ytool-FreeBSD-x86_64.tar.gz
+            command: build
 
           # - release_for: Windows-x86_64
           #   os: windows-latest
@@ -33,12 +33,12 @@ jobs:
           #   name: ytool-macOS-x86_64.tar.gz
           #   command: build
 
-          - release_for: macOS-aarch64
-            os: macOS-latest
-            target: aarch64-apple-darwin
-            bin: ytool
-            name: ytool-macOS-aarch64.tar.gz
-            command: build
+          # - release_for: macOS-aarch64
+          #   os: macOS-latest
+          #   target: aarch64-apple-darwin
+          #   bin: ytool
+          #   name: ytool-macOS-aarch64.tar.gz
+          #   command: build
 
     runs-on: ${{ matrix.platform.os }}
     steps:
@@ -88,5 +88,6 @@ jobs:
         # if: startsWith( github.ref, 'refs/tags/v' )
         uses: ncipollo/release-action@v1
         with:
-           artifacts: "ytool-*"
-           bodyFile: "yuque-tools/CHANGELOG.md"
+          artifacts: 'ytool-*'
+          allowUpdates: true
+          bodyFile: 'yuque-tools/CHANGELOG.md'
