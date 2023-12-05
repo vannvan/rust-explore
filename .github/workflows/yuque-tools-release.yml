@@ -19,26 +19,26 @@ jobs:
             name: ytool-FreeBSD-x86_64.tar.gz
             command: build
 
-          # - release_for: Windows-x86_64
-          #   os: windows-latest
-          #   target: x86_64-pc-windows-msvc
-          #   bin: ytool.exe
-          #   name: ytool-Windows-x86_64.zip
-          #   command: build
+          - release_for: Windows-x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: ytool.exe
+            name: ytool-Windows-x86_64.zip
+            command: build
 
-          # - release_for: macOS-x86_64
-          #   os: macOS-latest
-          #   target: x86_64-apple-darwin
-          #   bin: ytool
-          #   name: ytool-macOS-x86_64.tar.gz
-          #   command: build
+          - release_for: macOS-x86_64
+            os: macOS-latest
+            target: x86_64-apple-darwin
+            bin: ytool
+            name: ytool-macOS-x86_64.tar.gz
+            command: build
 
-          # - release_for: macOS-aarch64
-          #   os: macOS-latest
-          #   target: aarch64-apple-darwin
-          #   bin: ytool
-          #   name: ytool-macOS-aarch64.tar.gz
-          #   command: build
+          - release_for: macOS-aarch64
+            os: macOS-latest
+            target: aarch64-apple-darwin
+            bin: ytool
+            name: ytool-macOS-aarch64.tar.gz
+            command: build
 
     runs-on: ${{ matrix.platform.os }}
     steps:
@@ -78,6 +78,7 @@ jobs:
           path: 'ytool-*'
 
       - name: Publish GitHub release
+        # 这个有点问题
         # uses: softprops/action-gh-release@v1
         # with:
         #   draft: true
@@ -91,3 +92,4 @@ jobs:
           artifacts: 'ytool-*'
           allowUpdates: true
           bodyFile: 'yuque-tools/CHANGELOG.md'
+        if: startsWith( github.ref, 'refs/tags/v' )
