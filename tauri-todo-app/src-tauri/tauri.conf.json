@@ -6,7 +6,7 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "tauri-app",
+    "productName": "代办清单",
     "version": "0.0.0"
   },
   "tauri": {

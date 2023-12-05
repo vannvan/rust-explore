@@ -8,6 +8,9 @@ dependencies:
   '@tauri-apps/api':
     specifier: ^1.1.0
     version: 1.1.0
+  '@types/antd':
+    specifier: ^1.0.0
+    version: 1.0.0(react-dom@18.2.0)(react@18.2.0)
   antd:
     specifier: ^5.12.1
     version: 5.12.1(react-dom@18.2.0)(react@18.2.0)
@@ -628,6 +631,19 @@ packages:
       '@tauri-apps/cli-win32-ia32-msvc': 1.5.7
       '@tauri-apps/cli-win32-x64-msvc': 1.5.7
     dev: true
+
+  /@types/antd@1.0.0(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-wnRh+S6vPMahsuSN6lFJQzNXuhUKr9JKic1L/NMdIChsuu9Fc+mDyF7H17eFPQlgpLVdT0DyYIgB1di8DA9AuQ==}
+    deprecated: This is a stub types definition for antd (https://github.com/ant-design/ant-design). antd provides its own type definitions, so you don't need @types/antd installed!
+    dependencies:
+      antd: 5.12.1(react-dom@18.2.0)(react@18.2.0)
+    transitivePeerDependencies:
+      - date-fns
+      - luxon
+      - moment
+      - react
+      - react-dom
+    dev: false
 
   /@types/node@18.7.10:
     resolution: {integrity: sha512-SST7B//wF7xlGoLo1IEVB0cQ4e7BgXlDk5IaPgb5s0DlYLjb4if07h8+0zbQIvahfPNXs6e7zyT0EH1MqaS+5g==}

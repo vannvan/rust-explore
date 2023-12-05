@@ -1,5 +1,7 @@
 ## 1.0.4 2023-12-05
 
+- test infomation
+
 ### 使用说明
 
 请采用`grd`(含义为group-resource-download)命令进行下载，即
