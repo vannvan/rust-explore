@@ -4,7 +4,7 @@
 
 [![.github/workflows/yuque-tools-release.yml](https://github.com/vannvan/rust-explore/actions/workflows/yuque-tools-release.yml/badge.svg)](https://github.com/vannvan/rust-explore/actions/workflows/yuque-tools-release.yml)
 
-## 程序清单
+## 项目清单
 
 - [hello](simple-application/hello) 国际惯例，hello world
 - [hello-rust](simple-application/hello-rust) 使用了`ferris-says`的hello程序

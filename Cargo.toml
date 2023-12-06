@@ -1,0 +1,18 @@
+# 定义一个虚拟清单，目的是为了让rust-analyzer识别
+[workspace]
+members = [
+    "commander-cli",
+    "config-rs",
+    "crawl-demo",
+    "hello-webassembly",
+    "kt-cli",
+    "minigrep",
+    "napi-cool",
+    "tauri-todo-app/src-tauri",
+    "yuque-tools",
+    "simple-application/*"
+]
+
+exclude = ["simple-application/hello"]
+
+
