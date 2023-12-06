@@ -10,7 +10,7 @@ dist/
 test
 dist
 target
-.vscode
+# .vscode
 
 
 # yuque-tools下需要忽略的文件

@@ -57,7 +57,7 @@
         "fullscreen": false,
         "height": 600,
         "resizable": true,
-        "title": "tauri-app",
+        "title": "代办清单",
         "width": 800
       }
     ]

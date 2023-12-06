@@ -1,33 +1,39 @@
 import { useEffect, useRef, useState } from 'react'
-import reactLogo from './assets/react.svg'
 import { invoke } from '@tauri-apps/api/tauri'
+import { exit } from '@tauri-apps/api/process'
 import './App.css'
-import { Button, Form, Input, TimePicker } from 'antd'
+import { Button, Form, Input, TimePicker, message } from 'antd'
+import dayjs from 'dayjs'
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState('')
-  const [name, setName] = useState('')
-
   const [form] = Form.useForm()
 
   useEffect(() => {
-    // 获取容器元素
     const container = document.getElementById('container')
-
-    // 添加事件监听器
     container!.addEventListener('contextmenu', function (event) {
       // 阻止默认的右键点击行为
       event.preventDefault()
     })
   }, [])
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    setGreetMsg(await invoke('greet', { name }))
+  const onFinish = (values: any) => {
+    handleAddItem(values)
   }
 
-  const onFinish = (values: any) => {
-    console.log(values)
+  const handleAddItem = async (values: any) => {
+    const { deadline, taskName } = values
+
+    if (!deadline || !taskName) {
+      message.error('数据无效')
+    }
+
+    const item = {
+      taskName: taskName,
+      deadline: dayjs(deadline).format('YYYY-MM-DD HH:mm:ss'),
+    }
+
+    console.log(item)
+    await invoke('greet', item)
   }
 
   return (
@@ -40,13 +46,7 @@ function App() {
           <TimePicker style={{ width: 200 }} />
         </Form.Item>
         <Form.Item>
-          <Button
-            type="primary"
-            htmlType="submit"
-            onClick={() => {
-              console.log(form.getFieldsValue())
-            }}
-          >
+          <Button type="primary" htmlType="submit">
             添加
           </Button>
         </Form.Item>
