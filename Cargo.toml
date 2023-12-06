@@ -1,13 +1,13 @@
+
 # 定义一个虚拟清单，目的是为了让rust-analyzer识别
 [workspace]
 members = [
     "commander-cli",
     "config-rs",
     "crawl-demo",
-    "hello-webassembly",
+    "diesel_demo",
     "kt-cli",
     "minigrep",
-    "napi-cool",
     "tauri-todo-app/src-tauri",
     "yuque-tools",
     "simple-application/*"
@@ -16,3 +16,10 @@ members = [
 exclude = ["simple-application/hello"]
 
 
+# [profile.dev.package.insta]
+# opt-level = 3
+
+# [profile.dev.package.similar]
+# opt-level = 3
+
+resolver = "2"

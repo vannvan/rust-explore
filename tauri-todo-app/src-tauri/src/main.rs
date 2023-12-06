@@ -4,8 +4,8 @@
 )]
 
 #[tauri::command]
-fn add_task(task_name: String, deadline: String) {
-    println!("参数信息:{},{}", task_name, deadline)
+fn add_task(task_name: String, deadline: Vec<String>) {
+    println!("参数信息:{},{:?}", task_name, deadline)
 }
 
 fn main() {

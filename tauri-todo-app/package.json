@@ -10,6 +10,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@ant-design/icons": "^5.2.6",
     "@tauri-apps/api": "^1.1.0",
     "@types/antd": "^1.0.0",
     "antd": "^5.12.1",

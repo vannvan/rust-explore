@@ -1,0 +1,29 @@
+[package]
+name = "diesel_demo"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+uuid = { version = "1.2.1", features = [ "v4", "fast-rng", "macro-diagnostics" ] }
+chrono = { version="0.4", features = ["serde"] }
+diesel = { version = "2.0.2", features = ["sqlite", "chrono", "uuid"] }
+dotenvy = "0.15"
+libsqlite3-sys = { version = "0.27.0", features = ["bundled"] }
+
+
+
+[[bin]]
+name = "write_post"
+doc = false
+path = "src/bin/write_post.rs"
+
+
+[[bin]]
+name = "show_posts"
+doc = false
+path = "src/bin/show_posts.rs"
