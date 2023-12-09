@@ -11,10 +11,11 @@ serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 uuid = { version = "1.2.1", features = [ "v4", "fast-rng", "macro-diagnostics" ] }
 chrono = { version="0.4", features = ["serde"] }
-diesel = { version = "2.0.2", features = ["sqlite", "chrono", "uuid"] }
+diesel = { version = "2.0.2", features = ["sqlite", "chrono", "uuid","returning_clauses_for_sqlite_3_35"] }
 dotenvy = "0.15"
-libsqlite3-sys = { version = "0.27.0", features = ["bundled"] }
-
+diesel_migrations = { version = "2.0.0", features = ["sqlite"] }
+libsqlite3-sys = { version = "^0", features = ["bundled"] }
+rusqlite = { version = "0.30.0", features = ["bundled"] }
 
 
 [[bin]]
