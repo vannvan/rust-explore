@@ -9,13 +9,15 @@ edition = "2018"
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-uuid = { version = "1.2.1", features = [ "v4", "fast-rng", "macro-diagnostics" ] }
-chrono = { version="0.4", features = ["serde"] }
-diesel = { version = "2.0.2", features = ["sqlite", "chrono", "uuid","returning_clauses_for_sqlite_3_35"] }
+uuid = { version = "1.2.1", features = ["v4", "fast-rng", "macro-diagnostics"] }
+chrono = { version = "0.4", features = ["serde"] }
+diesel = { version = "2.0.2", features = [
+  "sqlite",
+  "returning_clauses_for_sqlite_3_35",
+] }
 dotenvy = "0.15"
 diesel_migrations = { version = "2.0.0", features = ["sqlite"] }
 libsqlite3-sys = { version = "^0", features = ["bundled"] }
-rusqlite = { version = "0.30.0", features = ["bundled"] }
 
 
 [[bin]]
@@ -28,3 +30,14 @@ path = "src/bin/write_post.rs"
 name = "show_posts"
 doc = false
 path = "src/bin/show_posts.rs"
+
+
+[[bin]]
+name = "publish_posts"
+doc = false
+path = "src/bin/publish_posts.rs"
+
+
+[[bin]]
+name = "delete_post"
+doc = false
