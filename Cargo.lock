@@ -5546,6 +5546,11 @@ dependencies = [
 name = "toto-list"
 version = "0.0.0"
 dependencies = [
+ "diesel",
+ "diesel_migrations",
+ "dotenvy",
+ "libsqlite3-sys",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "tauri",

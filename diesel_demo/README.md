@@ -6,11 +6,17 @@
 
 > echo "DATABASE_URL=diesel_demo.db" > .env
 
-1. 生成sql
+1. 生成db文件
 
-> diesel migration generate create_posts
+> diesel setup
 
-2. 生成db文件
+2. 生成sql文件,注意schama.rs文件是自动生成的，如果没有生成，就是有问题
+
+> diesel migration generate create_posts  // 这个名称根据情况自定义
+
+填写完sql之后
+
+3. 根据sql生成db文件
 
 > diesel migration run
 
