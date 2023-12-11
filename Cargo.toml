@@ -10,7 +10,8 @@ members = [
     "minigrep",
     "tauri-todo-app/src-tauri",
     "yuque-tools",
-    "simple-application/*"
+    "simple-application/*",
+    'actix-web',
 ]
 
 exclude = ["simple-application/hello"]
