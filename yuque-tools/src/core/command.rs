@@ -28,6 +28,9 @@ pub enum Commands {
     /// 获取知识库(交互流程请参考文档说明)
     #[command(arg_required_else_help = false)]
     Pull,
+    /// 下载任意知识库
+    #[command(arg_required_else_help = false)]
+    Down,
     /// 团队资源下载(group-resource-download)
     #[command(arg_required_else_help = false)]
     Grd,
@@ -49,6 +52,10 @@ impl YCommand {
         match args.command {
             Commands::Pull => {
                 let _ = Scheduler::start().await;
+                Ok(())
+            }
+            Commands::Down => {
+                let _ = Scheduler::download_any_knowledge_stock().await;
                 Ok(())
             }
             Commands::Grd => {

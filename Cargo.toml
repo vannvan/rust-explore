@@ -15,6 +15,9 @@ members = [
 ]
 
 exclude = ["simple-application/hello"]
+[unstable]
+gc = true
+
 
 
 # [profile.dev.package.insta]

@@ -669,6 +669,12 @@ impl Scheduler {
             Log::error(format!("【{}】资源信息获取失败", title).as_str());
         }
     }
+
+    /// 下载任意知识库
+    pub async fn download_any_knowledge_stock() -> Result<(), bool> {
+        println!("下载任意知识库");
+        Ok(())
+    }
 }
 
 #[cfg(test)]
