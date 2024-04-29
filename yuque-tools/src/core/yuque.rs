@@ -116,11 +116,12 @@ impl YuqueApi {
                     let docs =
                         Self::gen_books_data_for_cache(&serde_json::Value::Array(temp_books_data))
                             .await;
-
                     docs
                 };
 
                 let mut merged_books_data = vec![];
+
+                let mut all_docs_len: usize = 0;
 
                 if let Ok(collab_books) = Self::get_collab_books().await {
                     let collab_books_array = collab_books.to_owned();
@@ -131,11 +132,13 @@ impl YuqueApi {
 
                 for book in filtered_books_data.as_array().unwrap() {
                     merged_books_data.push(book.clone());
+                    all_docs_len += book.clone().get("docs").unwrap().as_array().unwrap().len()
                 }
 
                 let books_info = json!({
                     "expire_time": gen_timestamp() + GLOBAL_CONFIG.local_expire,
-                    "books_info": merged_books_data
+                    "books_info": merged_books_data,
+                    "all_docs_len": all_docs_len
                 });
 
                 // 写入知识库信息文件
