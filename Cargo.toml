@@ -13,6 +13,7 @@ members = [
     "simple-application/*",
     'actix-web',
     "fast-app-demo",
+    "yuque-tools-gui/src-tauri"
 ]
 
 exclude = ["simple-application/hello"]

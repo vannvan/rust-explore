@@ -1,0 +1,47 @@
+{
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:5173",
+    "distDir": "../dist"
+  },
+  "package": {
+    "productName": "Yuque Tools GUI",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": true
+    },
+    "bundle": {
+      "active": false,
+      "targets": "all",
+      "identifier": "com.yuque-tools.gui",
+      "icon": []
+    },
+    "security": {
+      "csp": null
+    },
+    "macOSPrivateApi": false,
+    "windows": [
+      {
+        "fullscreen": false,
+        "height": 500,
+        "resizable": false,
+        "title": "语雀工具 - 登录",
+        "width": 400,
+        "minHeight": 500,
+        "minWidth": 400,
+        "maxHeight": 500,
+        "maxWidth": 400,
+        "skipTaskbar": false,
+        "hiddenTitle": false,
+        "center": true,
+        "decorations": true,
+        "transparent": false,
+        "alwaysOnTop": false,
+        "visible": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+[package]
+name = "yuque-tools-gui"
+version = "0.1.0"
+description = "A Tauri App for Yuque Tools"
+authors = ["van"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "1.5", features = [] }
+
+[dependencies]
+tauri = { version = "1.5", features = ["api-all"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+reqwest = { version = "0.11", features = ["json", "cookies"] }
+rsa = "0.9"
+rand = "0.8"
+base64 = "0.21"
+chrono = { version = "0.4", features = ["serde"] }
+regex = "1.0"
+url = "2.0"
+urlencoding = "2.1"
+dirs = "5.0"
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
