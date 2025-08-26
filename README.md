@@ -20,6 +20,7 @@
 ### 进阶
 
 - [yuque-tools](yuque-tools) 语雀知识库导出-CLI 工具
+- [yuque-tools-gui](yuque-tools-gui) 语雀知识库导出图形化界面工具
 - [tauri-todo-app](tauri-todo-app) 一个简单的使用`tauri`+`sqlite`实现的本地化待办清单
 
 ## 经验分享
