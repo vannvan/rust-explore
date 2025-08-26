@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import LoginForm from './components/LoginForm'
 import UserAvatar from './components/UserAvatar'
 import BooksPage from './pages/BooksPage'
@@ -177,9 +177,9 @@ function App() {
         {!isLoggedIn ? (
           <LoginForm onLogin={handleLogin} isLoading={isLoading} />
         ) : (
-          <div className="w-full h-full">
+          <div className="w-full h-full p-2">
             {/* 导航栏 */}
-            <div className="bg-white rounded-lg shadow-lg py-2 px-4 mb-6">
+            <div className="bg-white rounded-lg shadow-lg py-2 px-4 mb-4">
               <div className="flex items-center justify-between">
                 <div className="flex space-x-4">
                   {/* <button className="px-4 py-2 rounded-lg font-medium bg-blue-600 text-white">
@@ -194,7 +194,12 @@ function App() {
             </div>
 
             {/* 页面内容 */}
-            <BooksPage />
+            <BooksPage
+              showSuccess={showSuccess}
+              showError={showError}
+              showInfo={(message: string) => showSuccess(message)} // 暂时用 success 替代 info
+              showWarning={(message: string) => showError(message)} // 暂时用 error 替代 warning
+            />
           </div>
         )}
 

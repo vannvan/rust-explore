@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Fragment } from 'react'
 import { tauriApi } from '../services/tauriApi'
 import {
   Table,
@@ -14,14 +14,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
 import BookManageDrawer from '../components/BookManageDrawer'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { useMessage } from '../hooks/useMessage'
+import CacheCountdown from '../components/CacheCountdown'
+import { useExportStore } from '../stores/exportStore'
 import type { TreeNode, BookItemRaw, BookItem } from '../types/yuque'
-
-interface ExpandedState {
-  [bookId: string]: boolean
-}
+import type { ExportTask } from '../components/ExportQueuePanel'
 
 type TabType = 'personal' | 'team'
+
+interface BooksPageProps {
+  showSuccess: (message: string, duration?: number) => string
+  showError: (message: string, duration?: number) => string
+  showInfo: (message: string, duration?: number) => string
+  showWarning: (message: string, duration?: number) => string
+}
 
 // 构建树形结构的工具函数
 const buildTreeStructure = (bookName: string, docs: DocItem[]): TreeNode[] => {
@@ -78,7 +83,7 @@ const buildTreeStructure = (bookName: string, docs: DocItem[]): TreeNode[] => {
     // 构建当前节点的路径
     const currentPath = parentPath ? `${parentPath}/${cleanTitle}` : cleanTitle
 
-    // 将 bookName 拼在最前面，构建完整的文档路径
+    // 将 bookName 拼在最前面，构建包含知识库的完整文档路径
     node.docFullPath = `${bookName}/${currentPath}`
 
     // 递归计算子节点的路径
@@ -117,14 +122,13 @@ const buildTreeStructure = (bookName: string, docs: DocItem[]): TreeNode[] => {
   return rootNodes
 }
 
-const BooksPage: React.FC = () => {
+const BooksPage: React.FC<BooksPageProps> = ({ showSuccess, showError, showInfo, showWarning }) => {
   const [activeTab, setActiveTab] = useState<TabType>('personal')
   const [personalBooks, setPersonalBooks] = useState<BookItem[]>([])
   const [teamBooks, setTeamBooks] = useState<BookItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [expandedBooks, setExpandedBooks] = useState<ExpandedState>({})
-  const { success: showSuccess, error: showError, info: showInfo } = useMessage()
+  const { addTask } = useExportStore()
   // 导出队列现在一直显示在右下角，不需要手动控制显示
 
   // Drawer 相关状态
@@ -148,6 +152,8 @@ const BooksPage: React.FC = () => {
         console.log('正在清除缓存...')
         showInfo('正在清除缓存...')
         await Promise.all([tauriApi.clearBooksCache(), tauriApi.clearDocsCache()])
+        // 清除本地缓存时间记录
+        localStorage.removeItem('lastCacheTime')
         console.log('缓存清除完成')
         showSuccess('缓存清除完成')
       }
@@ -159,8 +165,6 @@ const BooksPage: React.FC = () => {
       ])
 
       if (personalResponse.success && personalResponse.data) {
-        console.log('个人知识库原始数据:', personalResponse.data)
-
         // 为每个知识库构建树形结构
         const personalBooksWithTree: BookItem[] = (personalResponse.data as BookItemRaw[]).map(
           (book) => ({
@@ -169,20 +173,16 @@ const BooksPage: React.FC = () => {
           })
         ) as BookItem[]
 
-        console.log('个人知识库树形结构:', personalBooksWithTree)
         setPersonalBooks(personalBooksWithTree)
       }
 
       if (teamResponse.success && teamResponse.data) {
-        console.log('团队知识库原始数据:', teamResponse.data)
-
         // 为每个知识库构建树形结构
         const teamBooksWithTree: BookItem[] = (teamResponse.data as BookItemRaw[]).map((book) => ({
           ...book,
           docs: buildTreeStructure(book.name, book.docs),
         })) as BookItem[]
 
-        console.log('团队知识库树形结构:', teamBooksWithTree)
         setTeamBooks(teamBooksWithTree)
       }
 
@@ -192,19 +192,14 @@ const BooksPage: React.FC = () => {
         showError('获取知识库失败')
       } else {
         showSuccess('知识库数据加载完成')
+        // 记录缓存时间
+        localStorage.setItem('lastCacheTime', Date.now().toString())
       }
     } catch (err) {
       setError(`获取知识库失败：${err}`)
     } finally {
       setLoading(false)
     }
-  }
-
-  const toggleBookExpansion = (bookId: string) => {
-    setExpandedBooks((prev) => ({
-      ...prev,
-      [bookId]: !prev[bookId],
-    }))
   }
 
   const getBookIcon = (bookType: string) => {
@@ -256,33 +251,117 @@ const BooksPage: React.FC = () => {
     return activeTab === 'personal' ? '个人知识库' : '团队知识库'
   }
 
-  const renderDocumentRow = (doc: TreeNode, _bookId: string, level: number = 0) => {
-    const isDocument = doc.type === 'DOC'
-    const isTitle = doc.type === 'TITLE'
+  // 获取知识库中文档节点的数量（只统计 type="DOC" 的节点）
+  const getDocumentCount = (nodes: TreeNode[]): number => {
+    let count = 0
 
-    return (
-      <TableRow key={doc.uuid} className="hover:bg-gray-50">
-        <TableCell className="pl-6">
-          <div className="flex items-center space-x-2" style={{ paddingLeft: `${level * 20}px` }}>
-            <span className={isTitle ? 'font-medium' : ''}>{doc.title}</span>
-          </div>
-        </TableCell>
-        <TableCell>
-          <Badge variant={isDocument ? 'default' : 'secondary'}>
-            {isDocument ? '文档' : '目录'}
-          </Badge>
-        </TableCell>
-        <TableCell className="text-sm text-gray-500">
-          {doc.visible === 1 ? '可见' : '隐藏'}
-        </TableCell>
-        <TableCell className="text-sm text-gray-500">{doc.uuid}</TableCell>
-        <TableCell>
-          <Button variant="outline" size="sm">
-            查看
-          </Button>
-        </TableCell>
-      </TableRow>
-    )
+    const countDocuments = (nodeList: TreeNode[]) => {
+      nodeList.forEach((node) => {
+        if (node.type === 'DOC') {
+          count++
+        }
+        if (node.children.length > 0) {
+          countDocuments(node.children)
+        }
+      })
+    }
+
+    countDocuments(nodes)
+    return count
+  }
+
+  // 获取所有文档节点的辅助函数
+  const getAllDocumentNodes = (nodes: TreeNode[]): TreeNode[] => {
+    const documents: TreeNode[] = []
+    const collectDocuments = (nodeList: TreeNode[]) => {
+      nodeList.forEach((node) => {
+        if (node.type === 'DOC') {
+          documents.push(node)
+        }
+        if (node.children.length > 0) {
+          collectDocuments(node.children)
+        }
+      })
+    }
+    collectDocuments(nodes)
+    return documents
+  }
+
+  // 验证文档是否可导出的通用方法
+  const validateDocumentForExport = (doc: TreeNode): boolean => {
+    if (doc.type !== 'DOC') {
+      console.log('文档类型不是DOC，跳过导出:', doc.type)
+      showWarning(`跳过导出: ${doc.title} (不是文档类型)`)
+      return false
+    }
+    return true
+  }
+
+  // 创建导出任务的通用方法
+  const createExportTask = (
+    doc: TreeNode,
+    bookSlug: string,
+    isBatch: boolean = false
+  ): ExportTask => {
+    const timestamp = Date.now()
+    const randomId = isBatch ? Math.random() : 0
+    const taskId = isBatch ? `${doc.uuid}-${timestamp}-${randomId}` : `${doc.uuid}-${timestamp}`
+
+    return {
+      id: taskId,
+      title: doc.title,
+      status: 'pending',
+      progress: 0,
+      startTime: new Date(),
+      docInfo: {
+        bookSlug: bookSlug,
+        title: doc.title,
+        type: doc.type,
+        uuid: doc.uuid,
+        slug: doc.slug || doc.uuid, // 如果没有slug，使用uuid作为fallback
+        url: doc.url,
+        docFullPath: doc.docFullPath || doc.title, // 直接获取完整路径，如果没有则使用标题作为fallback
+      },
+    }
+  }
+
+  // 处理知识库导出
+  const handleExportBook = (book: BookItem) => {
+    console.log('=== handleExportBook 被调用 ===')
+    console.log('知识库信息:', {
+      name: book.name,
+      slug: book.slug,
+      docCount: book.docs.length,
+    })
+
+    if (!book.docs || book.docs.length === 0) {
+      showWarning('该知识库暂无文档可导出')
+      return
+    }
+
+    // 获取所有文档节点
+    const documentsToExport = getAllDocumentNodes(book.docs)
+
+    if (documentsToExport.length === 0) {
+      showWarning('没有可导出的文档')
+      return
+    }
+
+    // 过滤出可导出的文档
+    const validDocuments = documentsToExport.filter(validateDocumentForExport)
+
+    if (validDocuments.length === 0) {
+      showWarning('没有有效的文档可导出')
+      return
+    }
+
+    // 批量创建导出任务
+    validDocuments.forEach((doc) => {
+      const task = createExportTask(doc, book.slug, true)
+      addTask(task)
+    })
+
+    showSuccess(`已添加 ${validDocuments.length} 个导出任务到队列`)
   }
 
   if (loading) {
@@ -315,16 +394,37 @@ const BooksPage: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto p-2">
+    <div className="mx-auto">
+      {/* 缓存倒计时 */}
+      <div className="mb-4">
+        <CacheCountdown />
+      </div>
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <p className="text-gray-600 mt-2">
             {getCurrentTabTitle()} - 共 {getCurrentBooks().length} 个知识库
           </p>
         </div>
-        <Button onClick={showRefreshConfirm} variant="outline">
-          刷新
-        </Button>
+        <div
+          className="px-1 py-1 bg-blue-400 text-white rounded-md cursor-pointer hover:bg-blue-500"
+          onClick={showRefreshConfirm}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="size-4"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+            />
+          </svg>
+        </div>
       </div>
 
       {/* Tab 切换 */}
@@ -379,7 +479,7 @@ const BooksPage: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {getCurrentBooks().map((book) => (
-                  <React.Fragment key={book.slug}>
+                  <Fragment key={book.slug}>
                     {/* 知识库行 */}
                     <TableRow className="bg-gray-50 hover:bg-gray-100">
                       <TableCell>
@@ -405,7 +505,7 @@ const BooksPage: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{book.docs.length} 个文档</Badge>
+                        <Badge variant="outline">{getDocumentCount(book.docs)} 个文档</Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
@@ -416,8 +516,12 @@ const BooksPage: React.FC = () => {
                           >
                             查看
                           </Button>
-                          <Button variant="outline" size="sm">
-                            导出
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleExportBook(book)}
+                          >
+                            导出全部
                           </Button>
                         </div>
                       </TableCell>
@@ -436,7 +540,7 @@ const BooksPage: React.FC = () => {
                         </TableCell>
                       </TableRow>
                     )} */}
-                  </React.Fragment>
+                  </Fragment>
                 ))}
               </TableBody>
             </Table>
