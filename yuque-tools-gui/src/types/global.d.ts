@@ -64,6 +64,7 @@ declare global {
     sibling_uuid?: string
     level?: number
     bookSlug?: string // 知识库的slug，用于导出时构建正确的URL
+    docFullPath?: string // 文档的完整路径，用于导出时的文件保存路径
   }
 
   // 知识库项目结构

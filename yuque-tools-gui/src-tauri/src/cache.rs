@@ -82,6 +82,7 @@ pub struct CachedDocItem {
     pub prev_uuid: Option<String>,
     pub sibling_uuid: Option<String>,
     pub level: Option<u8>,
+    pub doc_full_path: Option<String>, // 新增：文档的完整路径，用于构建导出文件的目录结构
 }
 
 #[derive(Clone)]

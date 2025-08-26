@@ -227,13 +227,15 @@ function App() {
       {/* 全局消息容器 */}
       <MessageContainer messages={messages} onRemove={removeMessage} />
 
-      {/* 全局导出队列面板 */}
-      <ExportQueuePanel
-        tasks={exportTasks}
-        onClearCompleted={clearCompletedExportTasks}
-        onClearAll={clearAllTasks}
-        width="w-96"
-      />
+      {/* 全局导出队列面板 - 只在登录后显示 */}
+      {isLoggedIn && (
+        <ExportQueuePanel
+          tasks={exportTasks}
+          onClearCompleted={clearCompletedExportTasks}
+          onClearAll={clearAllTasks}
+          width="w-96"
+        />
+      )}
     </div>
   )
 }

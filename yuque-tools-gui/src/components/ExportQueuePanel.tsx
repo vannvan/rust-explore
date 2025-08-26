@@ -19,7 +19,7 @@ export interface ExportTask {
   error?: string
   startTime: Date
   endTime?: Date
-  // 新增：存储完整的文档信息，用于导出
+  // 存储完整的文档信息，用于导出
   docInfo: {
     title: string
     type: string
@@ -27,6 +27,17 @@ export interface ExportTask {
     slug: string
     bookSlug: string
     url: string
+    docFullPath: string
+    // 新增：包含更多 TreeNode 字段，减少手动映射
+    level?: number
+    child_uuid?: string
+    parent_uuid?: string
+    visible?: number
+    doc_id?: string
+    id?: string
+    open_window?: number
+    prev_uuid?: string
+    sibling_uuid?: string
   }
 }
 

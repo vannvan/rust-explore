@@ -113,12 +113,15 @@ export const useExportStore = create<ExportStore>((set, get) => ({
           visible: 1,
           url: pendingTask.docInfo.url,
           slug: pendingTask.docInfo.slug,
+          level: 0,
+          docFullPath: pendingTask.docInfo.docFullPath, // 添加 docFullPath 字段
         }
 
         const bookSlug = pendingTask.docInfo.bookSlug
         console.log('调用tauriApi.exportDocument，使用完整信息:', {
           bookSlug: bookSlug,
           url: doc.url,
+          docFullPath: doc.docFullPath, // 添加 docFullPath 日志
         })
 
         const result = await tauriApi.exportDocument(doc, bookSlug)

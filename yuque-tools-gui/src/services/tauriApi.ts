@@ -188,13 +188,31 @@ class TauriApiService {
     bookSlug: string
   ): Promise<{ success: boolean; filePath?: string; error?: string }> {
     try {
-      console.log({
+      console.log('导出文档信息:', {
         doc,
         bookSlug,
+        docFullPath: doc.docFullPath, // 现在可以直接访问
       })
+
       const outputDir = (await invoke('get_downloads_path')) as string
       const filePath = (await invoke('export_document', {
-        doc,
+        doc: {
+          title: doc.title,
+          type: doc.type, // 注意：Rust 后端期望 "type" 字段
+          uuid: doc.uuid,
+          child_uuid: doc.child_uuid,
+          parent_uuid: doc.parent_uuid,
+          visible: doc.visible,
+          url: doc.url,
+          slug: doc.slug || doc.uuid,
+          doc_id: doc.doc_id,
+          id: doc.id,
+          open_window: doc.open_window,
+          prev_uuid: doc.prev_uuid,
+          sibling_uuid: doc.sibling_uuid,
+          level: doc.level,
+          doc_full_path: doc.docFullPath, // 确保字段名完全匹配
+        },
         bookSlug: bookSlug,
         outputDir: `${outputDir}/yuque-exports`,
       })) as string
@@ -212,9 +230,34 @@ class TauriApiService {
     bookSlug: string
   ): Promise<{ success: boolean; filePaths?: string[]; error?: string }> {
     try {
+      console.log('批量导出文档信息:', {
+        docsCount: docs.length,
+        bookSlug,
+        docsWithPath: docs.map((doc) => ({
+          title: doc.title,
+          docFullPath: doc.docFullPath,
+        })),
+      })
+
       const outputDir = (await invoke('get_downloads_path')) as string
       const filePaths = (await invoke('export_documents', {
-        docs,
+        docs: docs.map((doc) => ({
+          title: doc.title,
+          type: doc.type, // 注意：Rust 后端期望 "type" 字段
+          uuid: doc.uuid,
+          child_uuid: doc.child_uuid,
+          parent_uuid: doc.parent_uuid,
+          visible: doc.visible,
+          url: doc.url,
+          slug: doc.slug || doc.uuid,
+          doc_id: doc.doc_id,
+          id: doc.id,
+          open_window: doc.open_window,
+          prev_uuid: doc.prev_uuid,
+          sibling_uuid: doc.sibling_uuid,
+          level: doc.level,
+          doc_full_path: doc.docFullPath, // 确保字段名完全匹配
+        })),
         bookSlug: bookSlug,
         outputDir: `${outputDir}/yuque-exports`,
       })) as string[]

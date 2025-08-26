@@ -47,10 +47,26 @@ export interface DocItem {
   parent_uuid: string
   visible: number
   url: string
+  level?: number
+  docFullPath?: string
+  // 新增：与 Rust 后端 DocItem 结构体完全匹配的字段
+  slug?: string
+  doc_id?: string
+  id?: string
+  open_window?: number
+  prev_uuid?: string
+  sibling_uuid?: string
 }
 
-// 知识库项目结构
-export interface BookItem {
+// 树形节点接口
+export interface TreeNode extends DocItem {
+  children: TreeNode[]
+  level: number
+  docFullPath: string
+}
+
+// 原始知识库项目结构（API 返回）
+export interface BookItemRaw {
   name: string
   slug: string
   stack_id?: string
@@ -61,10 +77,22 @@ export interface BookItem {
   docs: DocItem[]
 }
 
+// 构建树形结构后的知识库项目结构
+export interface BookItem {
+  name: string
+  slug: string
+  stack_id?: string
+  book_id?: number
+  user_login: string
+  user_name: string
+  book_type: string // "owner" 或 "collab"
+  docs: TreeNode[]
+}
+
 // 知识库列表响应
 export interface BooksResponse {
   success: boolean
-  data?: BookItem[]
+  data?: BookItemRaw[]
   message?: string
   total_count?: number
 }

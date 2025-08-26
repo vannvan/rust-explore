@@ -14,20 +14,111 @@ import {
   ChevronRightIcon,
   FolderIcon,
   DocumentIcon,
-  DocumentArrowDownIcon,
 } from '@heroicons/react/24/outline'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
 import BookManageDrawer from '../components/BookManageDrawer'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { useMessage } from '../hooks/useMessage'
-import { useExportStore } from '../stores/exportStore'
+import type { TreeNode, BookItemRaw, BookItem } from '../types/yuque'
 
 interface ExpandedState {
   [bookId: string]: boolean
 }
 
 type TabType = 'personal' | 'team'
+
+// 构建树形结构的工具函数
+const buildTreeStructure = (docs: DocItem[]): TreeNode[] => {
+  if (!docs || docs.length === 0) return []
+
+  // 创建文档映射
+  const docMap = new Map<string, TreeNode>()
+  const rootNodes: TreeNode[] = []
+
+  // 初始化所有节点
+  docs.forEach((doc) => {
+    return docMap.set(doc.uuid, {
+      ...doc,
+      id: doc.uuid, // 确保 id 是 string 类型
+      children: [],
+      level:
+        typeof doc.level === 'string' ? parseInt(doc.level, 10) || 0 : (doc.level as number) || 0,
+      docFullPath: '',
+      doc_id: doc.doc_id !== undefined ? String(doc.doc_id) : undefined,
+    })
+  })
+
+  // 构建父子关系
+  docs.forEach((doc) => {
+    const node = docMap.get(doc.uuid)!
+    if (doc.parent_uuid && doc.parent_uuid !== '' && docMap.has(doc.parent_uuid)) {
+      const parent = docMap.get(doc.parent_uuid)!
+      parent.children.push(node)
+      // 如果没有原始 level，则计算层级
+      if (node.level === 0) {
+        node.level = parent.level + 1
+      }
+    } else {
+      rootNodes.push(node)
+    }
+  })
+
+  // 为了调试，也根据child_uuid构建反向关系
+  docs.forEach((doc) => {
+    if (doc.child_uuid && doc.child_uuid !== '') {
+      const parentNode = docMap.get(doc.uuid)!
+      const childNode = docMap.get(doc.child_uuid)
+      if (childNode && !parentNode.children.includes(childNode)) {
+        parentNode.children.push(childNode)
+      }
+    }
+  })
+
+  // 计算每个节点的完整路径
+  const calculateFullPath = (node: TreeNode, parentPath: string = '') => {
+    // 清理文件名，替换不能作为路径的字符
+    const cleanTitle = node.title.replace(/[<>:"/\\|?*]/g, '-')
+
+    // 构建当前节点的路径
+    const currentPath = parentPath ? `${parentPath}/${cleanTitle}` : cleanTitle
+    node.docFullPath = currentPath
+
+    // 递归计算子节点的路径
+    node.children.forEach((child) => {
+      calculateFullPath(child, currentPath)
+    })
+  }
+
+  // 为所有根节点计算完整路径
+  rootNodes.forEach((node) => {
+    calculateFullPath(node)
+  })
+
+  // 按原始顺序排序，保持语雀的文档顺序
+  const sortByOrder = (nodes: TreeNode[]) => {
+    nodes.sort((a, b) => {
+      // 首先按 level 排序
+      if (a.level !== b.level) {
+        return a.level - b.level
+      }
+      // 然后按在原始数组中的位置排序
+      const aIndex = docs.findIndex((d) => d.uuid === a.uuid)
+      const bIndex = docs.findIndex((d) => d.uuid === b.uuid)
+      return aIndex - bIndex
+    })
+
+    // 递归排序子节点
+    nodes.forEach((node) => {
+      if (node.children.length > 0) {
+        sortByOrder(node.children)
+      }
+    })
+  }
+
+  sortByOrder(rootNodes)
+  return rootNodes
+}
 
 const BooksPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('personal')
@@ -36,7 +127,6 @@ const BooksPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [expandedBooks, setExpandedBooks] = useState<ExpandedState>({})
-
   const { success: showSuccess, error: showError, info: showInfo } = useMessage()
   // 导出队列现在一直显示在右下角，不需要手动控制显示
 
@@ -72,12 +162,31 @@ const BooksPage: React.FC = () => {
       ])
 
       if (personalResponse.success && personalResponse.data) {
-        console.log('个人知识', personalResponse)
-        setPersonalBooks(personalResponse.data)
+        console.log('个人知识库原始数据:', personalResponse.data)
+
+        // 为每个知识库构建树形结构
+        const personalBooksWithTree: BookItem[] = (personalResponse.data as BookItemRaw[]).map(
+          (book) => ({
+            ...book,
+            docs: buildTreeStructure(book.docs),
+          })
+        ) as BookItem[]
+
+        console.log('个人知识库树形结构:', personalBooksWithTree)
+        setPersonalBooks(personalBooksWithTree)
       }
 
       if (teamResponse.success && teamResponse.data) {
-        setTeamBooks(teamResponse.data)
+        console.log('团队知识库原始数据:', teamResponse.data)
+
+        // 为每个知识库构建树形结构
+        const teamBooksWithTree: BookItem[] = (teamResponse.data as BookItemRaw[]).map((book) => ({
+          ...book,
+          docs: buildTreeStructure(book.docs),
+        })) as BookItem[]
+
+        console.log('团队知识库树形结构:', teamBooksWithTree)
+        setTeamBooks(teamBooksWithTree)
       }
 
       // 检查是否有错误
@@ -150,7 +259,7 @@ const BooksPage: React.FC = () => {
     return activeTab === 'personal' ? '个人知识库' : '团队知识库'
   }
 
-  const renderDocumentRow = (doc: DocItem, _bookId: string, level: number = 0) => {
+  const renderDocumentRow = (doc: TreeNode, _bookId: string, level: number = 0) => {
     const isDocument = doc.type === 'DOC'
     const isTitle = doc.type === 'TITLE'
 

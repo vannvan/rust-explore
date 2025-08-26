@@ -1,13 +1,14 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { tauriApi } from '../services/tauriApi'
 import type { ExportTask } from '../components/ExportQueuePanel'
+import type { TreeNode } from '../types/yuque'
 
 export const useExportManager = (bookSlug: string) => {
   const [tasks, setTasks] = useState<ExportTask[]>([])
   const [isQueueVisible, setIsQueueVisible] = useState(false)
   const taskQueueRef = useRef<ExportTask[]>([])
   const isProcessingRef = useRef(false)
-  const docMapRef = useRef<Map<string, DocItem>>(new Map()) // 存储taskId到DocItem的映射
+  const docMapRef = useRef<Map<string, TreeNode>>(new Map()) // 存储taskId到TreeNode的映射
 
   // 每秒更新一次任务状态
   useEffect(() => {
@@ -16,6 +17,46 @@ export const useExportManager = (bookSlug: string) => {
     }, 1000)
 
     return () => clearInterval(interval)
+  }, [])
+
+  // 创建导出任务的公共函数
+  const createExportTask = useCallback(
+    (doc: TreeNode, isBatch: boolean = false): ExportTask => {
+      const timestamp = Date.now()
+      const randomId = isBatch ? Math.random() : 0
+      const taskId = isBatch ? `${doc.uuid}-${timestamp}-${randomId}` : `${doc.uuid}-${timestamp}`
+
+      return {
+        id: taskId,
+        title: doc.title,
+        status: 'pending',
+        progress: 0,
+        startTime: new Date(),
+        docInfo: {
+          ...doc,
+          bookSlug: bookSlug,
+          docFullPath: doc.docFullPath || doc.title,
+          level: doc.level,
+          slug: doc.slug ?? '', // fix: ensure slug is always a string
+        },
+      }
+    },
+    [bookSlug]
+  )
+
+  // 添加任务到队列的公共函数
+  const addTasksToQueue = useCallback((newTasks: ExportTask[], docs: TreeNode[]) => {
+    // 存储 TreeNode 的映射
+    newTasks.forEach((task, index) => {
+      docMapRef.current.set(task.id, docs[index])
+    })
+
+    setTasks((prevTasks) => [...prevTasks, ...newTasks])
+    taskQueueRef.current.push(...newTasks)
+    setIsQueueVisible(true)
+
+    // 开始处理队列
+    processQueue()
   }, [])
 
   // 处理任务队列
@@ -66,9 +107,19 @@ export const useExportManager = (bookSlug: string) => {
           type: doc.type,
           uuid: doc.uuid,
           slug: doc.slug,
+          docFullPath: doc.docFullPath,
         })
+        console.log('任务中的 docInfo:', task.docInfo)
         console.log('调用tauriApi.exportDocument，bookSlug:', bookSlug)
-        const result = await tauriApi.exportDocument(doc, bookSlug)
+
+        // 使用 task.docInfo 中的信息，确保包含 docFullPath
+        const result = await tauriApi.exportDocument(
+          {
+            ...doc,
+            docFullPath: task.docInfo.docFullPath,
+          },
+          bookSlug
+        )
         console.log('导出API调用结果:', result)
 
         clearInterval(progressInterval)
@@ -88,7 +139,6 @@ export const useExportManager = (bookSlug: string) => {
                 : t
             )
           )
-          // 显示成功消息
           console.log(`导出成功: ${task.title}`)
         } else {
           // 导出失败
@@ -104,7 +154,6 @@ export const useExportManager = (bookSlug: string) => {
                 : t
             )
           )
-          // 显示失败消息
           console.error(`导出失败: ${task.title} - ${result.error}`)
         }
       } catch (error) {
@@ -130,83 +179,42 @@ export const useExportManager = (bookSlug: string) => {
     isProcessingRef.current = false
   }, [])
 
-  // 添加导出任务
+  // 添加导出任务（单个）
   const addExportTask = useCallback(
-    (doc: DocItem) => {
+    (doc: TreeNode) => {
       console.log('=== addExportTask 被调用 ===')
       console.log('接收到的文档:', {
         title: doc.title,
         type: doc.type,
         uuid: doc.uuid,
         slug: doc.slug,
+        docFullPath: doc.docFullPath,
       })
       console.log('当前bookSlug:', bookSlug)
 
-      const task: ExportTask = {
-        id: `${doc.uuid}-${Date.now()}`,
-        title: doc.title,
-        status: 'pending',
-        progress: 0,
-        startTime: new Date(),
-        docInfo: {
-          title: doc.title,
-          type: doc.type,
-          uuid: doc.uuid,
-          slug: doc.slug || doc.uuid, // 如果没有slug，使用uuid作为fallback
-          bookSlug: bookSlug,
-          url: doc.url,
-        },
-      }
-
+      const task = createExportTask(doc, false)
       console.log('创建的任务:', task)
 
-      // 存储DocItem的映射
-      docMapRef.current.set(task.id, doc)
-      console.log('DocItem已存储到映射中')
-
-      setTasks((prevTasks) => [...prevTasks, task])
-      taskQueueRef.current.push(task)
-      setIsQueueVisible(true)
-
-      console.log('开始处理队列...')
-      // 开始处理队列
-      processQueue()
+      // 使用公共函数添加任务
+      addTasksToQueue([task], [doc])
     },
-    [processQueue]
+    [createExportTask, addTasksToQueue]
   )
 
   // 批量添加导出任务
   const addBatchExportTasks = useCallback(
-    (docs: DocItem[]) => {
-      const newTasks: ExportTask[] = docs.map((doc) => ({
-        id: `${doc.uuid}-${Date.now()}-${Math.random()}`,
-        title: doc.title,
-        status: 'pending',
-        progress: 0,
-        startTime: new Date(),
-        docInfo: {
-          title: doc.title,
-          type: doc.type,
-          uuid: doc.uuid,
-          slug: doc.slug || doc.uuid, // 如果没有slug，使用uuid作为fallback
-          bookSlug: bookSlug,
-          url: doc.url,
-        },
-      }))
+    (docs: TreeNode[]) => {
+      console.log('=== addBatchExportTasks 被调用 ===')
+      console.log('接收到的文档数量:', docs.length)
+      console.log('当前bookSlug:', bookSlug)
 
-      // 存储DocItem的映射
-      newTasks.forEach((task, index) => {
-        docMapRef.current.set(task.id, docs[index])
-      })
+      const newTasks = docs.map((doc) => createExportTask(doc, true))
+      console.log('创建的批量任务数量:', newTasks.length)
 
-      setTasks((prevTasks) => [...prevTasks, ...newTasks])
-      taskQueueRef.current.push(...newTasks)
-      setIsQueueVisible(true)
-
-      // 开始处理队列
-      processQueue()
+      // 使用公共函数添加任务
+      addTasksToQueue(newTasks, docs)
     },
-    [processQueue]
+    [createExportTask, addTasksToQueue]
   )
 
   // 清除已完成的任务

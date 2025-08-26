@@ -315,9 +315,12 @@ async fn export_document(
     };
     // 打印 doc.title, doc.slug, book_slug, output_dir 以便调试
     println!(
-        "导出文档: title = {:?}, slug = {:?},url = {:?}, book_slug = {:?}, output_dir = {:?}",
+        "导出文档: title = {:?}, slug = {:?}, url = {:?}, book_slug = {:?}, output_dir = {:?}",
         doc.title, doc.slug, doc.url, book_slug, output_dir
     );
+
+    // 新增：打印 doc_full_path 字段，确认是否正确传递
+    println!("导出文档完整路径: doc_full_path = {:?}", doc.doc_full_path);
 
     match service_clone
         .export_document(&doc, &book_slug, &output_dir)
@@ -339,6 +342,17 @@ async fn export_documents(
         let service = state.0.lock().map_err(|_| "Failed to lock service")?;
         service.clone()
     };
+
+    // 新增：打印每个文档的 doc_full_path 字段，确认是否正确传递
+    println!("批量导出文档信息:");
+    for (i, doc) in docs.iter().enumerate() {
+        println!(
+            "文档 {}: title = {:?}, doc_full_path = {:?}",
+            i + 1,
+            doc.title,
+            doc.doc_full_path
+        );
+    }
 
     match service_clone
         .export_documents(&docs, &book_slug, &output_dir)

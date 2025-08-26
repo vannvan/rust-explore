@@ -55,6 +55,7 @@ pub struct DocItem {
     pub prev_uuid: Option<String>,
     pub sibling_uuid: Option<String>,
     pub level: Option<u8>,
+    pub doc_full_path: Option<String>, // 新增：文档的完整路径，用于构建导出文件的目录结构
 }
 
 // 新增：知识库项目结构
@@ -179,6 +180,7 @@ impl YuqueService {
                         prev_uuid: doc.prev_uuid.clone(),
                         sibling_uuid: doc.sibling_uuid.clone(),
                         level: doc.level,
+                        doc_full_path: doc.doc_full_path.clone(),
                     })
                     .collect(),
             })
@@ -963,6 +965,7 @@ impl YuqueService {
                     prev_uuid: cached_doc.prev_uuid,
                     sibling_uuid: cached_doc.sibling_uuid,
                     level: cached_doc.level,
+                    doc_full_path: cached_doc.doc_full_path, // 从缓存加载时也包含完整路径
                 })
                 .collect();
 
@@ -1031,6 +1034,7 @@ impl YuqueService {
                                     prev_uuid: doc.prev_uuid.clone(),
                                     sibling_uuid: doc.sibling_uuid.clone(),
                                     level: doc.level,
+                                    doc_full_path: doc.doc_full_path.clone(), // 保存到缓存时也包含完整路径
                                 })
                                 .collect::<Vec<_>>(),
                         ) {
@@ -1167,6 +1171,7 @@ impl YuqueService {
                 prev_uuid,
                 sibling_uuid,
                 level: original_level, // 使用原始的 level 字段
+                doc_full_path: None,   // 在解析时暂时不设置完整路径
             };
 
             docs.push(doc_item);
@@ -1226,6 +1231,7 @@ impl YuqueService {
         println!("文档类型: {}", doc.node_type);
         println!("文档slug: {:?}", doc.slug);
         println!("知识库slug: {}", book_slug);
+        println!("文档完整路径: {:?}", doc.doc_full_path);
 
         // 检查必要参数
         if doc.slug.is_none() {
@@ -1258,22 +1264,49 @@ impl YuqueService {
 
         println!("成功获取内容，长度: {} 字符", content.len());
 
-        // 创建输出目录
-        let full_path = format!("{}/{}", output_dir, doc.title);
-        let file_path = format!("{}.md", full_path);
-        println!("输出文件路径: {}", file_path);
+        // 使用 docFullPath 构建文件保存路径，保持目录结构
+        let file_path = if let Some(doc_full_path) = &doc.doc_full_path {
+            // 分离目录路径和文件名
+            let path_parts: Vec<&str> = doc_full_path.split('/').collect();
+
+            if path_parts.len() > 1 {
+                // 有目录结构：创建目录路径，文件名单独处理
+                let dir_path = path_parts[..path_parts.len() - 1].join("/");
+                let file_name = path_parts.last().unwrap();
+
+                // 只清理文件名中的非法字符，保持目录结构
+                let clean_file_name =
+                    file_name.replace(['<', '>', ':', '"', '\\', '|', '?', '*'], "-");
+                format!("{}/{}.md", dir_path, clean_file_name)
+            } else {
+                // 没有目录结构：直接使用路径作为文件名
+                let clean_file_name =
+                    doc_full_path.replace(['<', '>', ':', '"', '\\', '|', '?', '*'], "-");
+                format!("{}.md", clean_file_name)
+            }
+        } else {
+            // 如果没有完整路径，使用标题作为文件名
+            let clean_title = doc
+                .title
+                .replace(['<', '>', ':', '"', '\\', '|', '?', '*'], "-");
+            format!("{}.md", clean_title)
+        };
+
+        // 构建完整的输出路径
+        let full_output_path = format!("{}/{}", output_dir, file_path);
+        println!("输出文件路径: {}", full_output_path);
 
         // 确保目录存在
-        if let Some(parent) = std::path::Path::new(&full_path).parent() {
+        if let Some(parent) = std::path::Path::new(&full_output_path).parent() {
             std::fs::create_dir_all(parent)?;
             println!("创建目录: {:?}", parent);
         }
 
         // 写入文件
-        std::fs::write(&file_path, content)?;
-        println!("文件写入成功: {}", file_path);
+        std::fs::write(&full_output_path, content)?;
+        println!("文件写入成功: {}", full_output_path);
 
-        Ok(file_path)
+        Ok(full_output_path)
     }
 
     /// 批量导出文档
