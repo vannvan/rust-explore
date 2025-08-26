@@ -6,13 +6,13 @@
 use std::env;
 
 mod cache;
+mod libs;
 mod yuque_service;
 
+use libs::models::*;
 use std::sync::{Arc, Mutex};
 use tauri::State;
-use yuque_service::{
-    ApiResponse, BooksResponse, DocItem, LoginResponse, YuqueAccount, YuqueService, YuqueUserInfo,
-};
+use yuque_service::YuqueService;
 
 // 全局语雀服务状态
 struct YuqueState(Arc<Mutex<YuqueService>>);
@@ -169,22 +169,6 @@ async fn get_book_stacks(state: State<'_, YuqueState>) -> Result<BooksResponse, 
         let mut state_guard = state_clone.lock().map_err(|_| "Failed to lock service")?;
         *state_guard = service;
     }
-
-    result.map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-async fn get_space_books(
-    state: State<'_, YuqueState>,
-) -> Result<ApiResponse<serde_json::Value>, String> {
-    let state_clone = state.0.clone();
-
-    let service = {
-        let state_guard = state_clone.lock().map_err(|_| "Failed to lock service")?;
-        state_guard.clone()
-    };
-
-    let result = service.get_space_books().await;
 
     result.map_err(|e| e.to_string())
 }
@@ -407,7 +391,6 @@ fn main() {
             get_personal_books,
             get_team_books,
             get_book_stacks,
-            get_space_books,
             expand_window,
             shrink_window,
             export_document,

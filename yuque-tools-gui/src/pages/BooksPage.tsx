@@ -9,12 +9,7 @@ import {
   TableRow,
 } from '../components/ui/table'
 import { Button } from '../components/ui/button'
-import {
-  ChevronDownIcon,
-  ChevronRightIcon,
-  FolderIcon,
-  DocumentIcon,
-} from '@heroicons/react/24/outline'
+
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
 import BookManageDrawer from '../components/BookManageDrawer'
@@ -29,7 +24,7 @@ interface ExpandedState {
 type TabType = 'personal' | 'team'
 
 // 构建树形结构的工具函数
-const buildTreeStructure = (docs: DocItem[]): TreeNode[] => {
+const buildTreeStructure = (bookName: string, docs: DocItem[]): TreeNode[] => {
   if (!docs || docs.length === 0) return []
 
   // 创建文档映射
@@ -82,7 +77,9 @@ const buildTreeStructure = (docs: DocItem[]): TreeNode[] => {
 
     // 构建当前节点的路径
     const currentPath = parentPath ? `${parentPath}/${cleanTitle}` : cleanTitle
-    node.docFullPath = currentPath
+
+    // 将 bookName 拼在最前面，构建完整的文档路径
+    node.docFullPath = `${bookName}/${currentPath}`
 
     // 递归计算子节点的路径
     node.children.forEach((child) => {
@@ -168,7 +165,7 @@ const BooksPage: React.FC = () => {
         const personalBooksWithTree: BookItem[] = (personalResponse.data as BookItemRaw[]).map(
           (book) => ({
             ...book,
-            docs: buildTreeStructure(book.docs),
+            docs: buildTreeStructure(book.name, book.docs),
           })
         ) as BookItem[]
 
@@ -182,7 +179,7 @@ const BooksPage: React.FC = () => {
         // 为每个知识库构建树形结构
         const teamBooksWithTree: BookItem[] = (teamResponse.data as BookItemRaw[]).map((book) => ({
           ...book,
-          docs: buildTreeStructure(book.docs),
+          docs: buildTreeStructure(book.name, book.docs),
         })) as BookItem[]
 
         console.log('团队知识库树形结构:', teamBooksWithTree)
@@ -267,11 +264,6 @@ const BooksPage: React.FC = () => {
       <TableRow key={doc.uuid} className="hover:bg-gray-50">
         <TableCell className="pl-6">
           <div className="flex items-center space-x-2" style={{ paddingLeft: `${level * 20}px` }}>
-            {isTitle ? (
-              <FolderIcon className="h-4 w-4 text-yellow-500" />
-            ) : (
-              <DocumentIcon className="h-4 w-4 text-blue-500" />
-            )}
             <span className={isTitle ? 'font-medium' : ''}>{doc.title}</span>
           </div>
         </TableCell>
@@ -392,18 +384,6 @@ const BooksPage: React.FC = () => {
                     <TableRow className="bg-gray-50 hover:bg-gray-100">
                       <TableCell>
                         <div className="flex items-center space-x-3">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleBookExpansion(book.slug)}
-                            className="p-1 h-6 w-6"
-                          >
-                            {expandedBooks[book.slug] ? (
-                              <ChevronDownIcon className="h-4 w-4" />
-                            ) : (
-                              <ChevronRightIcon className="h-4 w-4" />
-                            )}
-                          </Button>
                           <span className="text-lg">{getBookIcon(book.book_type)}</span>
                           <div>
                             <div className="font-medium">{book.name}</div>
@@ -444,18 +424,18 @@ const BooksPage: React.FC = () => {
                     </TableRow>
 
                     {/* 文档行（展开时显示） */}
-                    {expandedBooks[book.slug] && book.docs.length > 0 && (
+                    {/* {expandedBooks[book.slug] && book.docs.length > 0 && (
                       <>{book.docs.map((doc) => renderDocumentRow(doc, book.slug))}</>
-                    )}
+                    )} */}
 
                     {/* 空文档提示 */}
-                    {expandedBooks[book.slug] && book.docs.length === 0 && (
+                    {/* {expandedBooks[book.slug] && book.docs.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                           该知识库暂无文档
                         </TableCell>
                       </TableRow>
-                    )}
+                    )} */}
                   </React.Fragment>
                 ))}
               </TableBody>

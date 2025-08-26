@@ -372,7 +372,7 @@ const BookManageDrawer: React.FC<BookManageDrawerProps> = ({
         <div className="absolute left-0 top-0 h-full w-96 bg-white shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col">
           {/* 头部 */}
           <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">管理知识库：{bookName}</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{bookName}</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -438,12 +438,12 @@ const BookManageDrawer: React.FC<BookManageDrawerProps> = ({
                 >
                   {queuedDocCount === exportableDocCount ? '已全部添加' : '导出全部'}
                 </button>
-                <button
+                {/* <button
                   onClick={onClose}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
                 >
                   关闭
-                </button>
+                </button> */}
               </div>
             </div>
           </div>

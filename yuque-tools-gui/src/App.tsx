@@ -179,7 +179,7 @@ function App() {
         ) : (
           <div className="w-full h-full">
             {/* 导航栏 */}
-            <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
+            <div className="bg-white rounded-lg shadow-lg py-2 px-4 mb-6">
               <div className="flex items-center justify-between">
                 <div className="flex space-x-4">
                   {/* <button className="px-4 py-2 rounded-lg font-medium bg-blue-600 text-white">
