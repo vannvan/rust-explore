@@ -14,7 +14,13 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [userInfo, setUserInfo] = useState<YuqueUserInfo | null>(null)
   const [errorMessage, setErrorMessage] = useState<string>('')
-  const { messages, removeMessage, error: showError, success: showSuccess } = useMessage()
+  const {
+    messages,
+    removeMessage,
+    error: showError,
+    success: showSuccess,
+    timeout: showTimeout,
+  } = useMessage()
   const {
     tasks: exportTasks,
     clearCompletedTasks: clearCompletedExportTasks,
@@ -199,6 +205,7 @@ function App() {
               showError={showError}
               showInfo={(message: string) => showSuccess(message)} // 暂时用 success 替代 info
               showWarning={(message: string) => showError(message)} // 暂时用 error 替代 warning
+              showTimeout={showTimeout}
             />
           </div>
         )}

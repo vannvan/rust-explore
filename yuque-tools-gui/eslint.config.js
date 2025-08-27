@@ -35,6 +35,7 @@ export default [
       ...reactRefresh.configs.vite.rules,
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
+      'no-extra-semi': 'off',
       'no-unused-vars': 'off',
       'no-undef': 'off', // 关闭 no-undef，因为 TypeScript 已经处理了类型检查
     },

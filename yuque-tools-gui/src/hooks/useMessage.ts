@@ -64,6 +64,14 @@ export const useMessage = () => {
     [addMessage]
   )
 
+  // 超时错误专用方法
+  const timeout = useCallback(
+    (message: string, duration?: number) => {
+      return addMessage('error', `⏰ ${message}`, duration || 5000)
+    },
+    [addMessage]
+  )
+
   return {
     messages,
     addMessage,
@@ -73,5 +81,6 @@ export const useMessage = () => {
     error,
     warning,
     info,
+    timeout,
   }
 }

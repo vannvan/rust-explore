@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Fragment } from 'react'
 import { tauriApi } from '../services/tauriApi'
+import { handleApiError, getErrorType } from '../utils/errorHandler'
 import {
   Table,
   TableBody,
@@ -26,6 +27,7 @@ interface BooksPageProps {
   showError: (message: string, duration?: number) => string
   showInfo: (message: string, duration?: number) => string
   showWarning: (message: string, duration?: number) => string
+  showTimeout: (message: string, duration?: number) => string
 }
 
 // 构建树形结构的工具函数
@@ -122,7 +124,13 @@ const buildTreeStructure = (bookName: string, docs: DocItem[]): TreeNode[] => {
   return rootNodes
 }
 
-const BooksPage: React.FC<BooksPageProps> = ({ showSuccess, showError, showInfo, showWarning }) => {
+const BooksPage: React.FC<BooksPageProps> = ({
+  showSuccess,
+  showError,
+  showInfo,
+  showWarning,
+  showTimeout,
+}) => {
   const [activeTab, setActiveTab] = useState<TabType>('personal')
   const [personalBooks, setPersonalBooks] = useState<BookItem[]>([])
   const [teamBooks, setTeamBooks] = useState<BookItem[]>([])
@@ -188,15 +196,31 @@ const BooksPage: React.FC<BooksPageProps> = ({ showSuccess, showError, showInfo,
 
       // 检查是否有错误
       if (!personalResponse.success && !teamResponse.success) {
-        setError('获取知识库失败')
-        showError('获取知识库失败')
+        const errorMessage = personalResponse.message || teamResponse.message || '获取知识库失败'
+        setError(errorMessage)
+
+        // 检查是否为超时错误（通过消息内容判断）
+        if (errorMessage.includes('超时') || errorMessage.includes('timeout')) {
+          showTimeout(errorMessage)
+        } else {
+          showError(errorMessage)
+        }
       } else {
         showSuccess('知识库数据加载完成')
         // 记录缓存时间
         localStorage.setItem('lastCacheTime', Date.now().toString())
       }
     } catch (err) {
-      setError(`获取知识库失败：${err}`)
+      const errorMessage = handleApiError(err, '获取知识库失败')
+      setError(errorMessage)
+
+      // 根据错误类型显示不同的消息
+      const errorType = getErrorType(err)
+      if (errorType === 'timeout') {
+        showTimeout(errorMessage)
+      } else {
+        showError(errorMessage)
+      }
     } finally {
       setLoading(false)
     }
@@ -384,9 +408,14 @@ const BooksPage: React.FC<BooksPageProps> = ({ showSuccess, showError, showInfo,
           </CardHeader>
           <CardContent>
             <p className="text-gray-600 mb-4">{error}</p>
-            <Button onClick={() => loadBooks(false)} className="w-full">
-              重试
-            </Button>
+            <div className="flex space-x-2">
+              <Button onClick={() => loadBooks(false)} className="flex-1">
+                重试
+              </Button>
+              <Button onClick={() => loadBooks(true)} variant="outline" className="flex-1">
+                清除缓存重试
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

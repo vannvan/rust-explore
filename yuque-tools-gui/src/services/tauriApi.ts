@@ -1,6 +1,9 @@
 import { invoke } from '@tauri-apps/api/tauri'
+import { isTimeoutError } from '../utils/timeout'
+import { TimeoutClass } from '../utils/decorators'
 
 // Tauri API 服务
+@TimeoutClass(10000) // 为整个类添加10秒超时
 class TauriApiService {
   // 登录语雀
   async login(account: YuqueAccount): Promise<LoginResponse> {
@@ -9,6 +12,12 @@ class TauriApiService {
       return response
     } catch (error) {
       console.error('登录失败:', error)
+      if (isTimeoutError(error)) {
+        return {
+          success: false,
+          message: `登录请求超时，请检查网络连接后重试`,
+        }
+      }
       return {
         success: false,
         message: error instanceof Error ? error.message : '登录失败',
@@ -23,6 +32,12 @@ class TauriApiService {
       return response
     } catch (error) {
       console.error('获取用户信息失败:', error)
+      if (isTimeoutError(error)) {
+        return {
+          success: false,
+          message: `获取用户信息请求超时，请检查网络连接后重试`,
+        }
+      }
       return {
         success: false,
         message: error instanceof Error ? error.message : '获取用户信息失败',
@@ -37,6 +52,9 @@ class TauriApiService {
       return response
     } catch (error) {
       console.error('检查登录状态失败:', error)
+      if (isTimeoutError(error)) {
+        console.error('检查登录状态超时:', error.message)
+      }
       return false
     }
   }
@@ -48,6 +66,9 @@ class TauriApiService {
       return response
     } catch (error) {
       console.error('获取缓存用户信息失败:', error)
+      if (isTimeoutError(error)) {
+        console.error('获取缓存用户信息超时:', error.message)
+      }
       return null
     }
   }
@@ -59,6 +80,9 @@ class TauriApiService {
       return response
     } catch (error) {
       console.error('获取缓存 cookies 失败:', error)
+      if (isTimeoutError(error)) {
+        console.error('获取缓存cookies超时:', error.message)
+      }
       return []
     }
   }
@@ -69,6 +93,9 @@ class TauriApiService {
       await invoke('set_cached_user_info', { userInfo })
     } catch (error) {
       console.error('设置缓存用户信息失败:', error)
+      if (isTimeoutError(error)) {
+        console.error('设置缓存用户信息超时:', error.message)
+      }
     }
   }
 
@@ -78,6 +105,9 @@ class TauriApiService {
       await invoke('set_cached_cookies', { cookies })
     } catch (error) {
       console.error('设置缓存 cookies 失败:', error)
+      if (isTimeoutError(error)) {
+        console.error('设置缓存cookies超时:', error.message)
+      }
     }
   }
 
@@ -87,6 +117,9 @@ class TauriApiService {
       await invoke('clear_login_status')
     } catch (error) {
       console.error('清除登录状态失败:', error)
+      if (isTimeoutError(error)) {
+        console.error('清除登录状态超时:', error.message)
+      }
     }
   }
 
@@ -96,6 +129,9 @@ class TauriApiService {
       await invoke('clear_books_cache')
     } catch (error) {
       console.error('清除知识库缓存失败:', error)
+      if (isTimeoutError(error)) {
+        console.error('清除知识库缓存超时:', error.message)
+      }
     }
   }
 
@@ -105,6 +141,9 @@ class TauriApiService {
       await invoke('clear_docs_cache')
     } catch (error) {
       console.error('清除文档缓存失败:', error)
+      if (isTimeoutError(error)) {
+        console.error('清除文档缓存超时:', error.message)
+      }
     }
   }
 
@@ -115,6 +154,12 @@ class TauriApiService {
       return response
     } catch (error) {
       console.error('获取个人知识库列表失败:', error)
+      if (isTimeoutError(error)) {
+        return {
+          success: false,
+          message: `获取个人知识库列表请求超时，请检查网络连接后重试`,
+        }
+      }
       return {
         success: false,
         message: error instanceof Error ? error.message : '获取个人知识库列表失败',
@@ -129,6 +174,12 @@ class TauriApiService {
       return response
     } catch (error) {
       console.error('获取团队知识库列表失败:', error)
+      if (isTimeoutError(error)) {
+        return {
+          success: false,
+          message: `获取团队知识库列表请求超时，请检查网络连接后重试`,
+        }
+      }
       return {
         success: false,
         message: error instanceof Error ? error.message : '获取团队知识库列表失败',
@@ -143,6 +194,12 @@ class TauriApiService {
       return response
     } catch (error) {
       console.error('获取知识库列表失败:', error)
+      if (isTimeoutError(error)) {
+        return {
+          success: false,
+          message: `获取知识库列表请求超时，请检查网络连接后重试`,
+        }
+      }
       return {
         success: false,
         message: error instanceof Error ? error.message : '获取知识库列表失败',
@@ -157,6 +214,12 @@ class TauriApiService {
       return response
     } catch (error) {
       console.error('获取团队知识库失败:', error)
+      if (isTimeoutError(error)) {
+        return {
+          success: false,
+          message: `获取团队知识库请求超时，请检查网络连接后重试`,
+        }
+      }
       return {
         success: false,
         message: error instanceof Error ? error.message : '获取团队知识库失败',
@@ -170,6 +233,9 @@ class TauriApiService {
       await invoke('expand_window')
     } catch (error) {
       console.error('展开窗口失败:', error)
+      if (isTimeoutError(error)) {
+        console.error('展开窗口超时:', error.message)
+      }
     }
   }
 
@@ -179,6 +245,9 @@ class TauriApiService {
       await invoke('shrink_window')
     } catch (error) {
       console.error('收缩窗口失败:', error)
+      if (isTimeoutError(error)) {
+        console.error('收缩窗口超时:', error.message)
+      }
     }
   }
 
@@ -195,22 +264,10 @@ class TauriApiService {
       })
 
       const outputDir = (await invoke('get_downloads_path')) as string
+
       const filePath = (await invoke('export_document', {
         doc: {
-          title: doc.title,
-          type: doc.type, // 注意：Rust 后端期望 "type" 字段
-          uuid: doc.uuid,
-          child_uuid: doc.child_uuid,
-          parent_uuid: doc.parent_uuid,
-          visible: doc.visible,
-          url: doc.url,
-          slug: doc.slug || doc.uuid,
-          doc_id: doc.doc_id,
-          id: doc.id,
-          open_window: doc.open_window,
-          prev_uuid: doc.prev_uuid,
-          sibling_uuid: doc.sibling_uuid,
-          level: doc.level,
+          ...doc,
           doc_full_path: doc.docFullPath, // 确保字段名完全匹配
         },
         bookSlug: bookSlug,
@@ -220,6 +277,12 @@ class TauriApiService {
       return { success: true, filePath }
     } catch (error) {
       console.error('Failed to export document:', error)
+      if (isTimeoutError(error)) {
+        return {
+          success: false,
+          error: `导出文档请求超时，请检查网络连接后重试`,
+        }
+      }
       return { success: false, error: String(error) }
     }
   }
@@ -240,22 +303,10 @@ class TauriApiService {
       })
 
       const outputDir = (await invoke('get_downloads_path')) as string
+
       const filePaths = (await invoke('export_documents', {
         docs: docs.map((doc) => ({
-          title: doc.title,
-          type: doc.type, // 注意：Rust 后端期望 "type" 字段
-          uuid: doc.uuid,
-          child_uuid: doc.child_uuid,
-          parent_uuid: doc.parent_uuid,
-          visible: doc.visible,
-          url: doc.url,
-          slug: doc.slug || doc.uuid,
-          doc_id: doc.doc_id,
-          id: doc.id,
-          open_window: doc.open_window,
-          prev_uuid: doc.prev_uuid,
-          sibling_uuid: doc.sibling_uuid,
-          level: doc.level,
+          ...doc,
           doc_full_path: doc.docFullPath, // 确保字段名完全匹配
         })),
         bookSlug: bookSlug,
@@ -265,6 +316,12 @@ class TauriApiService {
       return { success: true, filePaths }
     } catch (error) {
       console.error('Failed to export documents:', error)
+      if (isTimeoutError(error)) {
+        return {
+          success: false,
+          error: `批量导出文档请求超时，请检查网络连接后重试`,
+        }
+      }
       return { success: false, error: String(error) }
     }
   }
@@ -275,6 +332,9 @@ class TauriApiService {
       return (await invoke('get_downloads_path')) as string
     } catch (error) {
       console.error('Failed to get downloads path:', error)
+      if (isTimeoutError(error)) {
+        console.error('获取下载路径超时:', error.message)
+      }
       return ''
     }
   }
