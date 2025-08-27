@@ -1,0 +1,203 @@
+name: Build Multi-Platform
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        target: [x86_64-apple-darwin, aarch64-apple-darwin]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Install Tauri CLI
+      run: npm install -g @tauri-apps/cli
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build frontend
+      run: npm run build
+    
+    - name: Build Tauri app
+      run: tauri build --target ${{ matrix.target }} --release
+    
+    - name: Upload macOS artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: yuque-tools-gui-macos-${{ matrix.target }}
+        path: src-tauri/target/${{ matrix.target }}/release/bundle/
+    
+    - name: Upload macOS app
+      uses: actions/upload-artifact@v4
+      with:
+        name: yuque-tools-gui-macos-${{ matrix.target }}-app
+        path: src-tauri/target/${{ matrix.target }}/release/bundle/app/
+
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Install Tauri CLI
+      run: npm install -g @tauri-apps/cli
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build frontend
+      run: npm run build
+    
+    - name: Build Tauri app
+      run: tauri build --target x86_64-pc-windows-msvc --release
+    
+    - name: Upload Windows artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: yuque-tools-gui-windows
+        path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/
+    
+    - name: Upload Windows app
+      uses: actions/upload-artifact@v4
+      with:
+        name: yuque-tools-gui-windows-app
+        path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/app/
+
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Install Tauri CLI
+      run: npm install -g @tauri-apps/cli
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build frontend
+      run: npm run build
+    
+    - name: Build Tauri app
+      run: tauri build --target x86_64-unknown-linux-gnu --release
+    
+    - name: Upload Linux artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: yuque-tools-gui-linux
+        path: src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/
+    
+    - name: Upload Linux app
+      uses: actions/upload-artifact@v4
+      with:
+        name: yuque-tools-gui-linux-app
+        path: src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/app/
+
+  create-release:
+    needs: [build-macos, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    
+    - name: Create release assets
+      run: |
+        mkdir -p release-assets
+        
+        # macOS Intel
+        if [ -d "artifacts/yuque-tools-gui-macos-x86_64-apple-darwin" ]; then
+          cp -r artifacts/yuque-tools-gui-macos-x86_64-apple-darwin/* release-assets/
+        fi
+        
+        # macOS Apple Silicon
+        if [ -d "artifacts/yuque-tools-gui-macos-aarch64-apple-darwin" ]; then
+          cp -r artifacts/yuque-tools-gui-macos-aarch64-apple-darwin/* release-assets/
+        fi
+        
+        # Windows
+        if [ -d "artifacts/yuque-tools-gui-windows" ]; then
+          cp -r artifacts/yuque-tools-gui-windows/* release-assets/
+        fi
+        
+        # Linux
+        if [ -d "artifacts/yuque-tools-gui-linux" ]; then
+          cp -r artifacts/yuque-tools-gui-linux/* release-assets/
+        fi
+        
+        ls -la release-assets/
+    
+    - name: Upload release assets
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-assets
+        path: release-assets/
+
+  test-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Install Tauri CLI
+      run: npm install -g @tauri-apps/cli
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build frontend
+      run: npm run build
+    
+    - name: Test Tauri build
+      run: tauri build --target x86_64-unknown-linux-gnu

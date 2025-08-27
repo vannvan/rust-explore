@@ -1,0 +1,502 @@
+name: Yuque Tools GUI - Multi-Platform Build
+
+on:
+  # 手动触发构建
+  workflow_dispatch:
+    inputs:
+      # 构建类型选择
+      build_type:
+        description: '构建类型'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - 'both'
+          - 'intel'
+          - 'silicon'
+      
+      # 目标平台
+      target_platform:
+        description: '目标平台'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'macos'
+          - 'windows'
+          - 'linux'
+      
+      # 是否构建发布版本
+      release_build:
+        description: '是否构建发布版本'
+        required: true
+        default: true
+        type: boolean
+      
+      # 版本标签
+      version_tag:
+        description: '版本标签 (例如: v1.0.0)'
+        required: false
+        type: string
+        default: ''
+      
+      # 构建说明
+      build_notes:
+        description: '构建说明'
+        required: false
+        type: string
+        default: 'Yuque Tools GUI 多平台构建'
+
+  # 推送到主分支时自动构建
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'yuque-tools-gui/**'
+
+  # 创建 Pull Request 时构建
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'yuque-tools-gui/**'
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_VERSION: "1.75"
+  NODE_VERSION: "18"
+
+jobs:
+  # 构建 macOS 应用
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        target: ${{ fromJson(format('[{0}]', github.event.inputs.build_type == 'both' ? '["x86_64-apple-darwin", "aarch64-apple-darwin"]' : github.event.inputs.build_type == 'intel' ? '["x86_64-apple-darwin"]' : '["aarch64-apple-darwin"]')) }}
+    if: |
+      (github.event_name == 'workflow_dispatch' && 
+       (github.event.inputs.target_platform == 'all' || github.event.inputs.target_platform == 'macos')) ||
+      (github.event_name != 'workflow_dispatch')
+    
+    steps:
+    - name: 检查代码
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: yuque-tools-gui/package-lock.json
+    
+    - name: 设置 Rust
+      uses: dtolnay/rust-toolchain@${{ env.RUST_VERSION }}
+      with:
+        targets: ${{ matrix.target }}
+    
+    - name: 安装 Tauri CLI
+      run: |
+        echo "安装 Tauri CLI..."
+        npm install -g @tauri-apps/cli@latest
+        tauri --version
+    
+    - name: 安装依赖
+      run: |
+        echo "安装 Node.js 依赖..."
+        cd yuque-tools-gui
+        npm ci
+        
+        echo "安装 Rust 依赖..."
+        cargo --version
+        rustc --version
+    
+    - name: 构建前端
+      run: |
+        echo "构建前端应用..."
+        cd yuque-tools-gui
+        npm run build
+        echo "前端构建完成"
+    
+    - name: 构建 Tauri 应用
+      run: |
+        echo "构建 Tauri 应用 (目标: ${{ matrix.target }})..."
+        cd yuque-tools-gui
+        if [ "${{ github.event.inputs.release_build }}" = "true" ]; then
+          echo "构建发布版本..."
+          tauri build --target ${{ matrix.target }} --release
+        else
+          echo "构建调试版本..."
+          tauri build --target ${{ matrix.target }}
+        fi
+        echo "Tauri 应用构建完成"
+    
+    - name: 收集构建产物
+      run: |
+        echo "收集构建产物..."
+        mkdir -p artifacts/${{ matrix.target }}
+        
+        if [ "${{ github.event.inputs.release_build }}" = "true" ]; then
+          cp -r yuque-tools-gui/src-tauri/target/${{ matrix.target }}/release/bundle/* artifacts/${{ matrix.target }}/
+        else
+          cp -r yuque-tools-gui/src-tauri/target/${{ matrix.target }}/debug/bundle/* artifacts/${{ matrix.target }}/
+        fi
+        
+        echo "构建产物收集完成:"
+        ls -la artifacts/${{ matrix.target }}/
+    
+    - name: 上传构建产物
+      uses: actions/upload-artifact@v4
+      with:
+        name: yuque-tools-gui-macos-${{ matrix.target }}-${{ github.event.inputs.release_build && 'release' || 'debug' }}
+        path: artifacts/${{ matrix.target }}/
+        retention-days: 30
+
+  # 构建 Windows 应用
+  build-windows:
+    runs-on: windows-latest
+    if: |
+      (github.event_name == 'workflow_dispatch' && 
+       (github.event.inputs.target_platform == 'all' || github.event.inputs.target_platform == 'windows')) ||
+      (github.event_name != 'workflow_dispatch')
+    
+    steps:
+    - name: 检查代码
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: yuque-tools-gui/package-lock.json
+    
+    - name: 设置 Rust
+      uses: dtolnay/rust-toolchain@${{ env.RUST_VERSION }}
+      with:
+        targets: x86_64-pc-windows-msvc
+    
+    - name: 安装 Tauri CLI
+      run: |
+        echo "安装 Tauri CLI..."
+        npm install -g @tauri-apps/cli@latest
+        tauri --version
+    
+    - name: 安装依赖
+      run: |
+        echo "安装 Node.js 依赖..."
+        cd yuque-tools-gui
+        npm ci
+        
+        echo "安装 Rust 依赖..."
+        cargo --version
+        rustc --version
+    
+    - name: 构建前端
+      run: |
+        echo "构建前端应用..."
+        cd yuque-tools-gui
+        npm run build
+        echo "前端构建完成"
+    
+    - name: 构建 Tauri 应用
+      run: |
+        echo "构建 Tauri 应用 (Windows)..."
+        cd yuque-tools-gui
+        if [ "${{ github.event.inputs.release_build }}" = "true" ]; then
+          echo "构建发布版本..."
+          tauri build --target x86_64-pc-windows-msvc --release
+        else
+          echo "构建调试版本..."
+          tauri build --target x86_64-pc-windows-msvc
+        fi
+        echo "Tauri 应用构建完成"
+    
+    - name: 收集构建产物
+      run: |
+        echo "收集构建产物..."
+        mkdir -p artifacts/windows
+        
+        if [ "${{ github.event.inputs.release_build }}" = "true" ]; then
+          cp -r yuque-tools-gui/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/* artifacts/windows/
+        else
+          cp -r yuque-tools-gui/src-tauri/target/x86_64-pc-windows-msvc/debug/bundle/* artifacts/windows/
+        fi
+        
+        echo "构建产物收集完成:"
+        ls -la artifacts/windows/
+    
+    - name: 上传构建产物
+      uses: actions/upload-artifact@v4
+      with:
+        name: yuque-tools-gui-windows-${{ github.event.inputs.release_build && 'release' || 'debug' }}
+        path: artifacts/windows/
+        retention-days: 30
+
+  # 构建 Linux 应用
+  build-linux:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'workflow_dispatch' && 
+       (github.event.inputs.target_platform == 'all' || github.event.inputs.target_platform == 'linux')) ||
+      (github.event_name != 'workflow_dispatch')
+    
+    steps:
+    - name: 检查代码
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: yuque-tools-gui/package-lock.json
+    
+    - name: 设置 Rust
+      uses: dtolnay/rust-toolchain@${{ env.RUST_VERSION }}
+      with:
+        targets: x86_64-unknown-linux-gnu
+    
+    - name: 安装系统依赖
+      run: |
+        echo "安装系统依赖..."
+        sudo apt-get update
+        sudo apt-get install -y \
+          libgtk-3-dev \
+          libwebkit2gtk-4.0-dev \
+          libappindicator3-dev \
+          librsvg2-dev \
+          libssl-dev \
+          libssl3
+    
+    - name: 安装 Tauri CLI
+      run: |
+        echo "安装 Tauri CLI..."
+        npm install -g @tauri-apps/cli@latest
+        tauri --version
+    
+    - name: 安装依赖
+      run: |
+        echo "安装 Node.js 依赖..."
+        cd yuque-tools-gui
+        npm ci
+        
+        echo "安装 Rust 依赖..."
+        cargo --version
+        rustc --version
+    
+    - name: 构建前端
+      run: |
+        echo "构建前端应用..."
+        cd yuque-tools-gui
+        npm run build
+        echo "前端构建完成"
+    
+    - name: 构建 Tauri 应用
+      run: |
+        echo "构建 Tauri 应用 (Linux)..."
+        cd yuque-tools-gui
+        if [ "${{ github.event.inputs.release_build }}" = "true" ]; then
+          echo "构建发布版本..."
+          tauri build --target x86_64-unknown-linux-gnu --release
+        else
+          echo "构建调试版本..."
+          tauri build --target x86_64-unknown-linux-gnu
+        fi
+        echo "Tauri 应用构建完成"
+    
+    - name: 收集构建产物
+      run: |
+        echo "收集构建产物..."
+        mkdir -p artifacts/linux
+        
+        if [ "${{ github.event.inputs.release_build }}" = "true" ]; then
+          cp -r yuque-tools-gui/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/* artifacts/linux/
+        else
+          cp -r yuque-tools-gui/src-tauri/target/x86_64-unknown-linux-gnu/debug/bundle/* artifacts/linux/
+        fi
+        
+        echo "构建产物收集完成:"
+        ls -la artifacts/linux/
+    
+    - name: 上传构建产物
+      uses: actions/upload-artifact@v4
+      with:
+        name: yuque-tools-gui-linux-${{ github.event.inputs.release_build && 'release' || 'debug' }}
+        path: artifacts/linux/
+        retention-days: 30
+
+  # 创建发布包
+  create-release-package:
+    needs: [build-macos, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: |
+      github.event.inputs.release_build == 'true' &&
+      (github.event.inputs.target_platform == 'all' || 
+       github.event.inputs.target_platform == 'macos' || 
+       github.event.inputs.target_platform == 'windows' || 
+       github.event.inputs.target_platform == 'linux')
+    
+    steps:
+    - name: 下载所有构建产物
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    
+    - name: 创建发布包
+      run: |
+        echo "创建多平台发布包..."
+        
+        # 创建发布目录
+        mkdir -p release-package
+        
+        # 复制所有平台的构建产物
+        for target in artifacts/*; do
+          if [ -d "$target" ]; then
+            target_name=$(basename "$target")
+            echo "处理目标: $target_name"
+            cp -r "$target"/* release-package/
+          fi
+        done
+        
+        # 创建版本信息文件
+        cat > release-package/version-info.txt << EOF
+版本信息
+========
+构建时间: $(date)
+Git 提交: ${{ github.sha }}
+分支: ${{ github.ref_name }}
+版本标签: ${{ github.event.inputs.version_tag || '未指定' }}
+构建说明: ${{ github.event.inputs.build_notes }}
+构建类型: ${{ github.event.inputs.release_build && 'Release' || 'Debug' }}
+目标平台: ${{ github.event.inputs.target_platform }}
+
+构建产物
+========
+EOF
+        
+        # 列出所有构建产物
+        find release-package -type f -name "*.app" -o -name "*.dmg" -o -name "*.pkg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" | sort >> release-package/version-info.txt
+        
+        echo "发布包创建完成:"
+        ls -la release-package/
+        echo ""
+        echo "版本信息:"
+        cat release-package/version-info.txt
+    
+    - name: 上传发布包
+      uses: actions/upload-artifact@v4
+      with:
+        name: yuque-tools-gui-multi-platform-release-package
+        path: release-package/
+        retention-days: 90
+    
+    - name: 创建 GitHub Release
+      if: github.event.inputs.version_tag != ''
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.event.inputs.version_tag }}
+        name: "Yuque Tools GUI ${{ github.event.inputs.version_tag }} - Multi-Platform"
+        body: |
+          ## 多平台应用发布
+          
+          **版本**: ${{ github.event.inputs.version_tag }}
+          **构建时间**: ${{ github.event.workflow_run.created_at }}
+          **构建说明**: ${{ github.event.inputs.build_notes }}
+          **目标平台**: ${{ github.event.inputs.target_platform }}
+          
+          ### 支持平台
+          ${{ github.event.inputs.target_platform == 'all' && '- macOS (Intel + Apple Silicon)' || '' }}
+          ${{ github.event.inputs.target_platform == 'all' && '- Windows (x86_64)' || '' }}
+          ${{ github.event.inputs.target_platform == 'all' && '- Linux (x86_64)' || '' }}
+          ${{ github.event.inputs.target_platform == 'macos' && '- macOS (Intel + Apple Silicon)' || '' }}
+          ${{ github.event.inputs.target_platform == 'windows' && '- Windows (x86_64)' || '' }}
+          ${{ github.event.inputs.target_platform == 'linux' && '- Linux (x86_64)' || '' }}
+          
+          ### 下载
+          请从构建产物中下载对应平台的应用文件。
+          
+          ### 安装说明
+          
+          #### macOS
+          1. 下载 `.dmg` 文件
+          2. 双击打开 `.dmg` 文件
+          3. 将应用拖拽到 Applications 文件夹
+          
+          #### Windows
+          1. 下载 `.exe` 安装程序
+          2. 双击运行安装程序
+          3. 按照提示完成安装
+          
+          #### Linux
+          1. 下载 `.AppImage` 文件
+          2. 给文件添加执行权限: `chmod +x *.AppImage`
+          3. 双击运行或命令行执行
+          
+          ### 注意事项
+          - 首次运行可能需要允许来自未知开发者的应用
+          - 在系统安全设置中允许应用运行
+          
+          ---
+          
+          *此版本由 GitHub Actions 自动构建*
+        
+        files: |
+          release-package/*.dmg
+          release-package/*.pkg
+          release-package/*.exe
+          release-package/*.AppImage
+          release-package/*.deb
+          release-package/*.rpm
+          release-package/version-info.txt
+        
+        draft: false
+        prerelease: false
+        generate_release_notes: false
+
+  # 构建完成通知
+  notify-completion:
+    needs: [build-macos, build-windows, build-linux, create-release-package]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: 构建完成通知
+      run: |
+        echo "=== Yuque Tools GUI 多平台构建完成 ==="
+        echo "构建时间: $(date)"
+        echo "触发方式: ${{ github.event_name }}"
+        
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "构建类型: ${{ github.event.inputs.build_type }}"
+          echo "目标平台: ${{ github.event.inputs.target_platform }}"
+          echo "发布版本: ${{ github.event.inputs.release_build }}"
+          echo "版本标签: ${{ github.event.inputs.version_tag || '未指定' }}"
+          echo "构建说明: ${{ github.event.inputs.build_notes }}"
+        fi
+        
+        echo ""
+        echo "构建结果:"
+        echo "  macOS:   ${{ needs.build-macos.result || 'skipped' }}"
+        echo "  Windows: ${{ needs.build-windows.result || 'skipped' }}"
+        echo "  Linux:   ${{ needs.build-linux.result || 'skipped' }}"
+        
+        if [ "${{ github.event.inputs.release_build }}" = "true" ]; then
+          echo "  发布包: ${{ needs.create-release-package.result || 'skipped' }}"
+        fi
+        
+        if [ "${{ needs.build-macos.result }}" = "success" ] || [ "${{ needs.build-windows.result }}" = "success" ] || [ "${{ needs.build-linux.result }}" = "success" ]; then
+          echo ""
+          echo "✅ 构建成功！请查看 Artifacts 获取构建产物。"
+          
+          if [ "${{ github.event.inputs.release_build }}" = "true" ] && [ "${{ needs.create-release-package.result }}" = "success" ]; then
+            echo "✅ 发布包创建成功！"
+          fi
+        else
+          echo ""
+          echo "❌ 构建失败！请检查构建日志以获取详细信息。"
+        fi

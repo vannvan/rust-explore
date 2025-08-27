@@ -1,0 +1,340 @@
+name: Rust Learn - Multi-Project Build
+
+on:
+  # 手动触发构建
+  workflow_dispatch:
+    inputs:
+      # 选择要构建的项目
+      project:
+        description: '选择要构建的项目'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'yuque-tools-gui'
+          - 'yuque-tools'
+          - 'tauri-todo-app'
+          - 'actix-web'
+          - 'diesel_demo'
+          - 'napi-cool'
+          - 'hellowasm'
+          - 'minigrep'
+          - 'commander-cli'
+          - 'config-rs'
+          - 'crawl-demo'
+          - 'fast-app-demo'
+          - 'simple-application'
+      
+      # 构建类型
+      build_type:
+        description: '构建类型'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - 'debug'
+          - 'release'
+      
+      # 目标平台 (仅对支持多平台的子项目有效)
+      target_platform:
+        description: '目标平台 (仅对 yuque-tools-gui 有效)'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'macos'
+          - 'windows'
+          - 'linux'
+      
+      # 是否运行测试
+      run_tests:
+        description: '是否运行测试'
+        required: true
+        default: true
+        type: boolean
+      
+      # 构建说明
+      build_notes:
+        description: '构建说明'
+        required: false
+        type: string
+        default: 'Rust Learn 项目构建'
+
+  # 推送到主分支时自动构建
+  push:
+    branches: [ main, develop ]
+    paths:
+      - '**/Cargo.toml'
+      - '**/package.json'
+      - '**/src/**'
+      - '**/src-tauri/**'
+      - '**/src-rs/**'
+
+  # 创建 Pull Request 时构建
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - '**/Cargo.toml'
+      - '**/package.json'
+      - '**/src/**'
+      - '**/src-tauri/**'
+      - '**/src-rs/**'
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_VERSION: "1.75"
+  NODE_VERSION: "18"
+
+jobs:
+  # 检查项目结构
+  check-projects:
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.check.outputs.projects }}
+    steps:
+    - name: 检查代码
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: 检查项目结构
+      id: check
+      run: |
+        echo "检查项目结构..."
+        
+        # 检查 Rust 项目
+        rust_projects=()
+        for dir in */; do
+          if [ -f "${dir}Cargo.toml" ]; then
+            rust_projects+=("${dir%/}")
+          fi
+        done
+        
+        # 检查 Tauri 项目
+        tauri_projects=()
+        for dir in */; do
+          if [ -f "${dir}src-tauri/Cargo.toml" ]; then
+            tauri_projects+=("${dir%/}")
+          fi
+        done
+        
+        # 检查 Node.js 项目
+        node_projects=()
+        for dir in */; do
+          if [ -f "${dir}package.json" ]; then
+            node_projects+=("${dir%/}")
+          fi
+        done
+        
+        echo "Rust 项目: ${rust_projects[*]}"
+        echo "Tauri 项目: ${tauri_projects[*]}"
+        echo "Node.js 项目: ${node_projects[*]}"
+        
+        # 输出为 JSON 格式
+        echo "projects=$(echo '{"rust":['\"${rust_projects[*]}\"'],"tauri":['\"${tauri_projects[*]}\"'],"node":['\"${node_projects[*]}\"']}' | tr ' ' ',')" >> $GITHUB_OUTPUT
+
+  # 构建 Rust 项目
+  build-rust:
+    needs: check-projects
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        project: ${{ fromJson(needs.check-projects.outputs.projects).rust }}
+        exclude:
+          # 排除特定项目在某些平台上的构建
+          - os: windows-latest
+            project: yuque-tools-gui
+          - os: macos-latest
+            project: yuque-tools-gui
+    if: |
+      contains(fromJson(needs.check-projects.outputs.projects).rust, matrix.project) &&
+      (github.event_name == 'workflow_dispatch' && 
+       (github.event.inputs.project == 'all' || github.event.inputs.project == matrix.project)) ||
+      (github.event_name != 'workflow_dispatch')
+    
+    steps:
+    - name: 检查代码
+      uses: actions/checkout@v4
+    
+    - name: 设置 Rust
+      uses: dtolnay/rust-toolchain@${{ env.RUST_VERSION }}
+    
+    - name: 构建项目
+      run: |
+        echo "构建 Rust 项目: ${{ matrix.project }}"
+        cd ${{ matrix.project }}
+        cargo build --${{ github.event.inputs.build_type || 'release' }}
+        echo "构建完成"
+    
+    - name: 运行测试
+      if: ${{ github.event.inputs.run_tests != 'false' }}
+      run: |
+        echo "运行测试: ${{ matrix.project }}"
+        cd ${{ matrix.project }}
+        cargo test --${{ github.event.inputs.build_type || 'release' }}
+        echo "测试完成"
+    
+    - name: 上传构建产物
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.project }}-${{ matrix.os }}-${{ github.event.inputs.build_type || 'release' }}
+        path: ${{ matrix.project }}/target/${{ github.event.inputs.build_type || 'release' }}/
+        retention-days: 7
+
+  # 构建 Tauri 项目
+  build-tauri:
+    needs: check-projects
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        project: ${{ fromJson(needs.check-projects.outputs.projects).tauri }}
+        exclude:
+          # 排除特定项目在某些平台上的构建
+          - os: windows-latest
+            project: yuque-tools-gui
+          - os: macos-latest
+            project: yuque-tools-gui
+    if: |
+      contains(fromJson(needs.check-projects.outputs.projects).tauri, matrix.project) &&
+      (github.event_name == 'workflow_dispatch' && 
+       (github.event.inputs.project == 'all' || github.event.inputs.project == matrix.project)) ||
+      (github.event_name != 'workflow_dispatch')
+    
+    steps:
+    - name: 检查代码
+      uses: actions/checkout@v4
+    
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: ${{ matrix.project }}/package-lock.json
+    
+    - name: 设置 Rust
+      uses: dtolnay/rust-toolchain@${{ env.RUST_VERSION }}
+    
+    - name: 安装 Tauri CLI
+      run: npm install -g @tauri-apps/cli@latest
+    
+    - name: 安装依赖
+      run: |
+        echo "安装依赖: ${{ matrix.project }}"
+        cd ${{ matrix.project }}
+        npm ci
+    
+    - name: 构建前端
+      run: |
+        echo "构建前端: ${{ matrix.project }}"
+        cd ${{ matrix.project }}
+        npm run build
+    
+    - name: 构建 Tauri 应用
+      run: |
+        echo "构建 Tauri 应用: ${{ matrix.project }}"
+        cd ${{ matrix.project }}
+        tauri build --${{ github.event.inputs.build_type || 'release' }}
+    
+    - name: 上传构建产物
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.project }}-${{ matrix.os }}-tauri-${{ github.event.inputs.build_type || 'release' }}
+        path: ${{ matrix.project }}/src-tauri/target/${{ github.event.inputs.build_type || 'release' }}/bundle/
+        retention-days: 7
+
+  # 构建 Node.js 项目
+  build-node:
+    needs: check-projects
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: ${{ fromJson(needs.check-projects.outputs.projects).node }}
+    if: |
+      contains(fromJson(needs.check-projects.outputs.projects).node, matrix.project) &&
+      (github.event_name == 'workflow_dispatch' && 
+       (github.event.inputs.project == 'all' || github.event.inputs.project == matrix.project)) ||
+      (github.event_name != 'workflow_dispatch')
+    
+    steps:
+    - name: 检查代码
+      uses: actions/checkout@v4
+    
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: ${{ matrix.project }}/package-lock.json
+    
+    - name: 安装依赖
+      run: |
+        echo "安装依赖: ${{ matrix.project }}"
+        cd ${{ matrix.project }}
+        npm ci
+    
+    - name: 构建项目
+      run: |
+        echo "构建 Node.js 项目: ${{ matrix.project }}"
+        cd ${{ matrix.project }}
+        if [ -f "package.json" ] && grep -q '"build"' package.json; then
+          npm run build
+        else
+          echo "项目没有构建脚本，跳过构建"
+        fi
+    
+    - name: 运行测试
+      if: ${{ github.event.inputs.run_tests != 'false' }}
+      run: |
+        echo "运行测试: ${{ matrix.project }}"
+        cd ${{ matrix.project }}
+        if [ -f "package.json" ] && grep -q '"test"' package.json; then
+          npm test
+        else
+          echo "项目没有测试脚本，跳过测试"
+        fi
+    
+    - name: 上传构建产物
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.project }}-node-${{ github.event.inputs.build_type || 'release' }}
+        path: ${{ matrix.project }}/dist/
+        if-no-files-found: ignore
+        retention-days: 7
+
+  # 构建完成通知
+  notify-completion:
+    needs: [check-projects, build-rust, build-tauri, build-node]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: 构建完成通知
+      run: |
+        echo "=== Rust Learn 项目构建完成 ==="
+        echo "构建时间: $(date)"
+        echo "触发方式: ${{ github.event_name }}"
+        
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "构建项目: ${{ github.event.inputs.project }}"
+          echo "构建类型: ${{ github.event.inputs.build_type }}"
+          echo "运行测试: ${{ github.event.inputs.run_tests }}"
+          echo "构建说明: ${{ github.event.inputs.build_notes }}"
+        fi
+        
+        echo ""
+        echo "构建结果:"
+        echo "  Rust 项目: ${{ needs.build-rust.result || 'skipped' }}"
+        echo "  Tauri 项目: ${{ needs.build-tauri.result || 'skipped' }}"
+        echo "  Node.js 项目: ${{ needs.build-node.result || 'skipped' }}"
+        
+        if [ "${{ needs.build-rust.result }}" = "success" ] || [ "${{ needs.build-tauri.result }}" = "success" ] || [ "${{ needs.build-node.result }}" = "success" ]; then
+          echo ""
+          echo "✅ 构建成功！请查看 Artifacts 获取构建产物。"
+        else
+          echo ""
+          echo "❌ 构建失败！请检查构建日志以获取详细信息。"
+        fi

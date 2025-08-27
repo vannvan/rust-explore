@@ -8,7 +8,20 @@
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "build:tauri": "tauri build",
+    "build:mac": "tauri build --target x86_64-apple-darwin --target aarch64-apple-darwin",
+    "build:mac-intel": "tauri build --target x86_64-apple-darwin",
+    "build:mac-silicon": "tauri build --target aarch64-apple-darwin",
+    "build:windows": "tauri build --target x86_64-pc-windows-msvc",
+    "build:linux": "tauri build --target x86_64-unknown-linux-gnu",
+    "build:all": "tauri build --target all",
+    "build:release": "tauri build --release",
+    "build:release:mac": "tauri build --release --target x86_64-apple-darwin --target aarch64-apple-darwin",
+    "build:release:windows": "tauri build --release --target x86_64-pc-windows-msvc",
+    "build:release:all": "tauri build --release --target all",
+    "dist:clean": "rm -rf src-tauri/target src-tauri/dist",
+    "dist:prepare": "npm run build && npm run build:tauri"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

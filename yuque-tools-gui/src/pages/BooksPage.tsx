@@ -487,7 +487,8 @@ const BooksPage: React.FC<BooksPageProps> = ({
       {getCurrentBooks().length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
-            <p className="text-gray-500">暂无知识库数据</p>
+            {/* <p className="text-gray-500">暂无知识库数据</p> */}
+            <p>待实现</p>
           </CardContent>
         </Card>
       ) : (

@@ -1,0 +1,256 @@
+name: Build macOS Release
+
+on:
+  # 手动触发构建
+  workflow_dispatch:
+    inputs:
+      # 构建类型选择
+      build_type:
+        description: '构建类型'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - 'both'
+          - 'intel'
+          - 'silicon'
+      
+      # 是否构建发布版本
+      release_build:
+        description: '是否构建发布版本'
+        required: true
+        default: true
+        type: boolean
+      
+      # 版本标签
+      version_tag:
+        description: '版本标签 (例如: v1.0.0)'
+        required: false
+        type: string
+        default: ''
+      
+      # 构建说明
+      build_notes:
+        description: '构建说明'
+        required: false
+        type: string
+        default: 'macOS 应用构建'
+
+env:
+  CARGO_TERM_COLOR: always
+  # 设置 Rust 工具链版本
+  RUST_VERSION: "1.75"
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        target: ${{ fromJson(format('[{0}]', github.event.inputs.build_type == 'both' ? '["x86_64-apple-darwin", "aarch64-apple-darwin"]' : github.event.inputs.build_type == 'intel' ? '["x86_64-apple-darwin"]' : '["aarch64-apple-darwin"]')) }}
+    
+    steps:
+    - name: 检查代码
+      uses: actions/checkout@v4
+      with:
+        # 获取完整历史记录用于版本信息
+        fetch-depth: 0
+    
+    - name: 设置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: 设置 Rust
+      uses: dtolnay/rust-toolchain@${{ env.RUST_VERSION }}
+      with:
+        targets: ${{ matrix.target }}
+    
+    - name: 安装 Tauri CLI
+      run: |
+        echo "安装 Tauri CLI..."
+        npm install -g @tauri-apps/cli@latest
+        tauri --version
+    
+    - name: 安装依赖
+      run: |
+        echo "安装 Node.js 依赖..."
+        npm ci
+        
+        echo "安装 Rust 依赖..."
+        cargo --version
+        rustc --version
+    
+    - name: 构建前端
+      run: |
+        echo "构建前端应用..."
+        npm run build
+        echo "前端构建完成"
+    
+    - name: 构建 Tauri 应用
+      run: |
+        echo "构建 Tauri 应用 (目标: ${{ matrix.target }})..."
+        if [ "${{ github.event.inputs.release_build }}" = "true" ]; then
+          echo "构建发布版本..."
+          tauri build --target ${{ matrix.target }} --release
+        else
+          echo "构建调试版本..."
+          tauri build --target ${{ matrix.target }}
+        fi
+        echo "Tauri 应用构建完成"
+    
+    - name: 收集构建产物
+      run: |
+        echo "收集构建产物..."
+        mkdir -p artifacts/${{ matrix.target }}
+        
+        if [ "${{ github.event.inputs.release_build }}" = "true" ]; then
+          cp -r src-tauri/target/${{ matrix.target }}/release/bundle/* artifacts/${{ matrix.target }}/
+        else
+          cp -r src-tauri/target/${{ matrix.target }}/debug/bundle/* artifacts/${{ matrix.target }}/
+        fi
+        
+        echo "构建产物收集完成:"
+        ls -la artifacts/${{ matrix.target }}/
+    
+    - name: 上传构建产物
+      uses: actions/upload-artifact@v4
+      with:
+        name: yuque-tools-gui-macos-${{ matrix.target }}-${{ github.event.inputs.release_build && 'release' || 'debug' }}
+        path: artifacts/${{ matrix.target }}/
+        retention-days: 30
+    
+    - name: 显示构建信息
+      run: |
+        echo "=== 构建信息 ==="
+        echo "目标平台: ${{ matrix.target }}"
+        echo "构建类型: ${{ github.event.inputs.release_build && 'Release' || 'Debug' }}"
+        echo "版本标签: ${{ github.event.inputs.version_tag || '未指定' }}"
+        echo "构建说明: ${{ github.event.inputs.build_notes }}"
+        echo "构建时间: $(date)"
+        echo "Git 提交: ${{ github.sha }}"
+        echo "分支: ${{ github.ref_name }}"
+        echo "=================="
+
+  create-release-package:
+    needs: build-macos
+    runs-on: macos-latest
+    if: github.event.inputs.release_build == 'true'
+    
+    steps:
+    - name: 下载所有构建产物
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    
+    - name: 创建发布包
+      run: |
+        echo "创建 macOS 发布包..."
+        
+        # 创建发布目录
+        mkdir -p release-package
+        
+        # 复制所有平台的构建产物
+        for target in artifacts/*; do
+          if [ -d "$target" ]; then
+            target_name=$(basename "$target")
+            echo "处理目标: $target_name"
+            cp -r "$target"/* release-package/
+          fi
+        done
+        
+        # 创建版本信息文件
+        cat > release-package/version-info.txt << EOF
+版本信息
+========
+构建时间: $(date)
+Git 提交: ${{ github.sha }}
+分支: ${{ github.ref_name }}
+版本标签: ${{ github.event.inputs.version_tag || '未指定' }}
+构建说明: ${{ github.event.inputs.build_notes }}
+构建类型: Release
+目标平台: ${{ fromJson(format('[{0}]', github.event.inputs.build_type == 'both' ? '["Intel (x86_64)", "Apple Silicon (ARM64)"]' : github.event.inputs.build_type == 'intel' ? '["Intel (x86_64)"]' : '["Apple Silicon (ARM64)"]')) | join(', ') }}
+
+构建产物
+========
+EOF
+        
+        # 列出所有构建产物
+        find release-package -type f -name "*.app" -o -name "*.dmg" -o -name "*.pkg" | sort >> release-package/version-info.txt
+        
+        echo "发布包创建完成:"
+        ls -la release-package/
+        echo ""
+        echo "版本信息:"
+        cat release-package/version-info.txt
+    
+    - name: 上传发布包
+      uses: actions/upload-artifact@v4
+      with:
+        name: yuque-tools-gui-macos-release-package
+        path: release-package/
+        retention-days: 90
+    
+    - name: 创建 GitHub Release
+      if: github.event.inputs.version_tag != ''
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.event.inputs.version_tag }}
+        name: "Yuque Tools GUI ${{ github.event.inputs.version_tag }} - macOS"
+        body: |
+          ## macOS 应用发布
+          
+          **版本**: ${{ github.event.inputs.version_tag }}
+          **构建时间**: ${{ github.event.workflow_run.created_at }}
+          **构建说明**: ${{ github.event.inputs.build_notes }}
+          
+          ### 支持平台
+          ${{ fromJson(format('[{0}]', github.event.inputs.build_type == 'both' ? '["Intel (x86_64)", "Apple Silicon (ARM64)"]' : github.event.inputs.build_type == 'intel' ? '["Intel (x86_64)"]' : '["Apple Silicon (ARM64)"]')) | map(format('- %s', .)) | join('\n') }}
+          
+          ### 下载
+          请从构建产物中下载对应平台的应用文件。
+          
+          ### 安装说明
+          1. 下载对应平台的 `.dmg` 文件
+          2. 双击打开 `.dmg` 文件
+          3. 将应用拖拽到 Applications 文件夹
+          4. 从 Applications 文件夹启动应用
+          
+          ### 注意事项
+          - 首次运行可能需要允许来自未知开发者的应用
+          - 在系统偏好设置 > 安全性与隐私中允许应用运行
+          
+          ---
+          
+          *此版本由 GitHub Actions 自动构建*
+        
+        files: |
+          release-package/*.dmg
+          release-package/*.pkg
+          release-package/version-info.txt
+        
+        draft: false
+        prerelease: false
+        generate_release_notes: false
+
+  notify-completion:
+    needs: [build-macos, create-release-package]
+    runs-on: macos-latest
+    if: always()
+    
+    steps:
+    - name: 构建完成通知
+      run: |
+        if [ "${{ needs.build-macos.result }}" = "success" ]; then
+          echo "✅ macOS 应用构建成功！"
+          echo "构建类型: ${{ github.event.inputs.build_type }}"
+          echo "发布版本: ${{ github.event.inputs.release_build }}"
+          echo "版本标签: ${{ github.event.inputs.version_tag || '未指定' }}"
+          
+          if [ "${{ github.event.inputs.release_build }}" = "true" ] && [ "${{ needs.create-release-package.result }}" = "success" ]; then
+            echo "✅ 发布包创建成功！"
+          fi
+        else
+          echo "❌ macOS 应用构建失败！"
+          echo "请检查构建日志以获取详细信息。"
+        fi

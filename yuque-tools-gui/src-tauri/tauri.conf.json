@@ -14,10 +14,38 @@
       "all": true
     },
     "bundle": {
-      "active": false,
+      "active": true,
       "targets": "all",
       "identifier": "com.yuque-tools.gui",
-      "icon": []
+      "icon": [
+        "icons/icon-16.png",
+        "icons/icon-32.png",
+        "icons/icon-128.png",
+        "icons/icon-256.png",
+        "icons/icon-512.png"
+      ],
+      "resources": [],
+      "externalBin": [],
+      "copyright": "Copyright © 2024 Yuque Tools",
+      "category": "DeveloperTool",
+      "shortDescription": "语雀资源导出工具",
+      "longDescription": "一个用于导出语雀知识库资源的桌面应用程序",
+      "deb": {
+        "depends": []
+      },
+      "macOS": {
+        "frameworks": [],
+        "minimumSystemVersion": "10.13",
+        "exceptionDomain": "",
+        "signingIdentity": null,
+        "providerShortName": null,
+        "entitlements": null
+      },
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": ""
+      }
     },
     "security": {
       "csp": null

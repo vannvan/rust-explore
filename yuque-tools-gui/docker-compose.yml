@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  # 多平台构建服务
+  builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./output:/output
+      - ./src:/app/src
+      - ./src-tauri:/app/src-tauri
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./vite.config.ts:/app/vite.config.ts
+      - ./tailwind.config.js:/app/tailwind.config.js
+      - ./postcss.config.js:/app/postcss.config.js
+    environment:
+      - CARGO_TERM_COLOR=always
+      - NODE_ENV=production
+    command: /usr/local/bin/build-all
+
+  # 仅构建 Linux 应用
+  builder-linux:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: rust-base
+    volumes:
+      - ./output/linux:/output/linux
+      - ./src:/app/src
+      - ./src-tauri:/app/src-tauri
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./vite.config.ts:/app/vite.config.ts
+      - ./tailwind.config.js:/app/tailwind.config.js
+      - ./postcss.config.js:/app/postcss.config.js
+    environment:
+      - CARGO_TERM_COLOR=always
+      - NODE_ENV=production
+    command: sh -c "tauri build --target x86_64-unknown-linux-gnu --release && cp -r src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/* /output/linux/"
+
+  # 仅构建 Windows 应用
+  builder-windows:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: windows-builder
+    volumes:
+      - ./output/windows:/output/windows
+      - ./src:/app/src
+      - ./src-tauri:/app/src-tauri
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./vite.config.ts:/app/vite.config.ts
+      - ./tailwind.config.js:/app/tailwind.config.js
+      - ./postcss.config.js:/app/postcss.config.js
+    environment:
+      - CARGO_TERM_COLOR=always
+      - NODE_ENV=production
+    command: sh -c "tauri build --target x86_64-pc-windows-msvc --release && cp -r src-tauri/target/x86_64-pc-windows-msvc/release/bundle/* /output/windows/"
+
+  # 仅构建 macOS 应用
+  builder-macos:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: macos-builder
+    volumes:
+      - ./output/macos:/output/macos
+      - ./src:/app/src
+      - ./src-tauri:/app/src-tauri
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./vite.config.ts:/app/vite.config.ts
+      - ./tailwind.config.js:/app/tailwind.config.js
+      - ./postcss.config.js:/app/postcss.config.js
+    environment:
+      - CARGO_TERM_COLOR=always
+      - NODE_ENV=production
+    command: sh -c "tauri build --target x86_64-apple-darwin --release && tauri build --target aarch64-apple-darwin --release && cp -r src-tauri/target/x86_64-apple-darwin/release/bundle/* /output/macos/ && cp -r src-tauri/target/aarch64-apple-darwin/release/bundle/* /output/macos/"
+
+  # 开发环境
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: rust-base
+    volumes:
+      - ./src:/app/src
+      - ./src-tauri:/app/src-tauri
+      - ./package.json:/app/package.json
+      - ./package-lock.json:/app/package-lock.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./vite.config.ts:/app/vite.config.ts
+      - ./tailwind.config.js:/app/tailwind.config.js
+      - ./postcss.config.js:/app/postcss.config.js
+    ports:
+      - '5173:5173'
+    environment:
+      - CARGO_TERM_COLOR=always
+      - NODE_ENV=development
+    command: sh -c "npm run dev"
+
+volumes:
+  output:
+    driver: local
