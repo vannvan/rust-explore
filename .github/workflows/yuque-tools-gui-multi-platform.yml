@@ -126,7 +126,7 @@ jobs:
           cache-dependency-path: yuque-tools-gui/package-lock.json
 
       - name: 设置 Rust
-        uses: dtolnay/rust-toolchain@${{ env.RUST_VERSION }}
+        uses: dtolnay/rust-toolchain@1.75
         with:
           targets: ${{ matrix.target }}
 
@@ -214,7 +214,7 @@ jobs:
           cache-dependency-path: yuque-tools-gui/package-lock.json
 
       - name: 设置 Rust
-        uses: dtolnay/rust-toolchain@${{ env.RUST_VERSION }}
+        uses: dtolnay/rust-toolchain@1.75
         with:
           targets: x86_64-pc-windows-msvc
 
@@ -302,7 +302,7 @@ jobs:
           cache-dependency-path: yuque-tools-gui/package-lock.json
 
       - name: 设置 Rust
-        uses: dtolnay/rust-toolchain@${{ env.RUST_VERSION }}
+        uses: dtolnay/rust-toolchain@1.75
         with:
           targets: x86_64-unknown-linux-gnu
 
