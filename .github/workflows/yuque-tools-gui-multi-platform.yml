@@ -162,10 +162,10 @@ jobs:
           cd yuque-tools-gui
           if [ "${{ env.RELEASE_BUILD }}" = "true" ]; then
             echo "构建发布版本..."
-            tauri build --target ${{ matrix.target }} --release
+            npx --no-install tauri build --target ${{ matrix.target }} --release
           else
             echo "构建调试版本..."
-            tauri build --target ${{ matrix.target }}
+            npx --no-install tauri build --target ${{ matrix.target }}
           fi
           echo "Tauri 应用构建完成"
 
@@ -250,10 +250,10 @@ jobs:
           cd yuque-tools-gui
           if [ "${{ env.RELEASE_BUILD }}" = "true" ]; then
             echo "构建发布版本..."
-            tauri build --target x86_64-pc-windows-msvc --release
+            npx --no-install tauri build --target x86_64-pc-windows-msvc --release
           else
             echo "构建调试版本..."
-            tauri build --target x86_64-pc-windows-msvc
+            npx --no-install tauri build --target x86_64-pc-windows-msvc
           fi
           echo "Tauri 应用构建完成"
 
@@ -328,7 +328,7 @@ jobs:
           EOF
 
           # 列出所有构建产物
-          find release-package -type f -name "*.app" -o -name "*.dmg" -o -name "*.pkg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" | sort >> release-package/version-info.txt
+          find release-package -type f -name "*.app" -o -name "*.dmg" -o -name "*.pkg" -o -name "*.exe" | sort >> release-package/version-info.txt
 
           echo "发布包创建完成:"
           ls -la release-package/
