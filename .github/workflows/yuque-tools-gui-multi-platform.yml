@@ -25,7 +25,6 @@ on:
           - 'all'
           - 'macos'
           - 'windows'
-          - 'linux'
 
       # 是否构建发布版本
       release_build:
@@ -279,109 +278,9 @@ jobs:
           path: artifacts/windows/
           retention-days: 30
 
-  # 构建 Linux 应用
-  build-linux:
-    needs: check-version
-    runs-on: ubuntu-latest
-    if: |
-      always() &&
-      (github.event_name != 'push' || needs.check-version.outputs.version_changed == 'true') &&
-      (github.event_name != 'workflow_dispatch' || github.event.inputs.target_platform == 'all' || github.event.inputs.target_platform == 'linux')
-
-    steps:
-      - name: 检查代码
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: 设置 Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: yuque-tools-gui/package-lock.json
-
-      - name: 设置 Rust
-        uses: dtolnay/rust-toolchain@1.75
-        with:
-          targets: x86_64-unknown-linux-gnu
-
-      - name: 安装系统依赖
-        run: |
-          echo "安装系统依赖..."
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-3-dev \
-            libwebkit2gtk-4.0-dev \
-            libappindicator3-dev \
-            librsvg2-dev \
-            libssl-dev \
-            libssl3
-
-      - name: 安装 Tauri CLI
-        run: |
-          echo "安装 Tauri CLI..."
-          npm install -g @tauri-apps/cli@1.5.9
-          tauri --version
-
-      - name: 安装依赖
-        run: |
-          echo "安装 Node.js 依赖..."
-          cd yuque-tools-gui
-          npm ci
-
-          echo "安装 Rust 依赖..."
-          cargo --version
-          rustc --version
-
-      - name: 同步应用版本
-        run: |
-          node -e "const fs=require('fs'); const packageJson=JSON.parse(fs.readFileSync('yuque-tools-gui/package.json','utf8')); const configPath='yuque-tools-gui/src-tauri/tauri.conf.json'; const config=JSON.parse(fs.readFileSync(configPath,'utf8')); config.package.version=packageJson.version; fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\\n');"
-
-      - name: 构建前端
-        run: |
-          echo "构建前端应用..."
-          cd yuque-tools-gui
-          npm run build
-          echo "前端构建完成"
-
-      - name: 构建 Tauri 应用
-        run: |
-          echo "构建 Tauri 应用 (Linux)..."
-          cd yuque-tools-gui
-          if [ "${{ env.RELEASE_BUILD }}" = "true" ]; then
-            echo "构建发布版本..."
-            tauri build --target x86_64-unknown-linux-gnu --release
-          else
-            echo "构建调试版本..."
-            tauri build --target x86_64-unknown-linux-gnu
-          fi
-          echo "Tauri 应用构建完成"
-
-      - name: 收集构建产物
-        run: |
-          echo "收集构建产物..."
-          mkdir -p artifacts/linux
-
-          if [ "${{ env.RELEASE_BUILD }}" = "true" ]; then
-            cp -r yuque-tools-gui/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/* artifacts/linux/
-          else
-            cp -r yuque-tools-gui/src-tauri/target/x86_64-unknown-linux-gnu/debug/bundle/* artifacts/linux/
-          fi
-
-          echo "构建产物收集完成:"
-          ls -la artifacts/linux/
-
-      - name: 上传构建产物
-        uses: actions/upload-artifact@v4
-        with:
-          name: yuque-tools-gui-linux-${{ env.RELEASE_BUILD == 'true' && 'release' || 'debug' }}
-          path: artifacts/linux/
-          retention-days: 30
-
   # 创建发布包
   create-release-package:
-    needs: [check-version, build-macos, build-windows, build-linux]
+    needs: [check-version, build-macos, build-windows]
     runs-on: ubuntu-latest
     if: |
       always() &&
@@ -461,10 +360,8 @@ jobs:
             ### 支持平台
             ${{ github.event.inputs.target_platform == 'all' && '- macOS (Intel + Apple Silicon)' || '' }}
             ${{ github.event.inputs.target_platform == 'all' && '- Windows (x86_64)' || '' }}
-            ${{ github.event.inputs.target_platform == 'all' && '- Linux (x86_64)' || '' }}
             ${{ github.event.inputs.target_platform == 'macos' && '- macOS (Intel + Apple Silicon)' || '' }}
             ${{ github.event.inputs.target_platform == 'windows' && '- Windows (x86_64)' || '' }}
-            ${{ github.event.inputs.target_platform == 'linux' && '- Linux (x86_64)' || '' }}
 
             ### 下载
             请从构建产物中下载对应平台的应用文件。
@@ -481,11 +378,6 @@ jobs:
             2. 双击运行安装程序
             3. 按照提示完成安装
 
-            #### Linux
-            1. 下载 `.AppImage` 文件
-            2. 给文件添加执行权限: `chmod +x *.AppImage`
-            3. 双击运行或命令行执行
-
             ### 注意事项
             - 首次运行可能需要允许来自未知开发者的应用
             - 在系统安全设置中允许应用运行
@@ -498,9 +390,6 @@ jobs:
             release-package/*.dmg
             release-package/*.pkg
             release-package/*.exe
-            release-package/*.AppImage
-            release-package/*.deb
-            release-package/*.rpm
             release-package/version-info.txt
 
           draft: false
@@ -509,7 +398,7 @@ jobs:
 
   # 构建完成通知
   notify-completion:
-    needs: [build-macos, build-windows, build-linux, create-release-package]
+    needs: [build-macos, build-windows, create-release-package]
     runs-on: ubuntu-latest
     if: always()
 
@@ -532,13 +421,12 @@ jobs:
           echo "构建结果:"
           echo "  macOS:   ${{ needs.build-macos.result || 'skipped' }}"
           echo "  Windows: ${{ needs.build-windows.result || 'skipped' }}"
-          echo "  Linux:   ${{ needs.build-linux.result || 'skipped' }}"
 
           if [ "${{ github.event.inputs.release_build }}" = "true" ]; then
             echo "  发布包: ${{ needs.create-release-package.result || 'skipped' }}"
           fi
 
-          if [ "${{ needs.build-macos.result }}" = "success" ] || [ "${{ needs.build-windows.result }}" = "success" ] || [ "${{ needs.build-linux.result }}" = "success" ]; then
+          if [ "${{ needs.build-macos.result }}" = "success" ] || [ "${{ needs.build-windows.result }}" = "success" ]; then
             echo ""
             echo "✅ 构建成功！请查看 Artifacts 获取构建产物。"
             
