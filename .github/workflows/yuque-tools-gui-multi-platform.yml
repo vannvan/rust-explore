@@ -61,6 +61,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_TARGET_DIR: ${{ github.workspace }}/yuque-tools-gui/src-tauri/target
   RUST_VERSION: '1.85'
   NODE_VERSION: '18'
   RELEASE_BUILD: ${{ github.event_name != 'workflow_dispatch' && 'true' || github.event.inputs.release_build }}
@@ -147,7 +148,7 @@ jobs:
 
       - name: 同步应用版本
         run: |
-          node -e "const fs=require('fs'); const packageJson=JSON.parse(fs.readFileSync('yuque-tools-gui/package.json','utf8')); const configPath='yuque-tools-gui/src-tauri/tauri.conf.json'; const config=JSON.parse(fs.readFileSync(configPath,'utf8')); config.package.version=packageJson.version; fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\\n');"
+          node -e "const fs=require('fs'); const packageJson=JSON.parse(fs.readFileSync('yuque-tools-gui/package.json','utf8')); const configPath='yuque-tools-gui/src-tauri/tauri.conf.json'; const tempPath=configPath+'.tmp'; const config=JSON.parse(fs.readFileSync(configPath,'utf8')); config.package.version=packageJson.version; fs.writeFileSync(tempPath, JSON.stringify(config, null, 2) + '\\n', 'utf8'); fs.copyFileSync(tempPath, configPath); fs.unlinkSync(tempPath); JSON.parse(fs.readFileSync(configPath,'utf8'));"
 
       - name: 构建前端
         run: |
@@ -235,7 +236,7 @@ jobs:
 
       - name: 同步应用版本
         run: |
-          node -e "const fs=require('fs'); const packageJson=JSON.parse(fs.readFileSync('yuque-tools-gui/package.json','utf8')); const configPath='yuque-tools-gui/src-tauri/tauri.conf.json'; const config=JSON.parse(fs.readFileSync(configPath,'utf8')); config.package.version=packageJson.version; fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\\n');"
+          node -e "const fs=require('fs'); const packageJson=JSON.parse(fs.readFileSync('yuque-tools-gui/package.json','utf8')); const configPath='yuque-tools-gui/src-tauri/tauri.conf.json'; const tempPath=configPath+'.tmp'; const config=JSON.parse(fs.readFileSync(configPath,'utf8')); config.package.version=packageJson.version; fs.writeFileSync(tempPath, JSON.stringify(config, null, 2) + '\\n', 'utf8'); fs.copyFileSync(tempPath, configPath); fs.unlinkSync(tempPath); JSON.parse(fs.readFileSync(configPath,'utf8'));"
 
       - name: 构建前端
         run: |
