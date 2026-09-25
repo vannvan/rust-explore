@@ -61,7 +61,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_VERSION: '1.75'
+  RUST_VERSION: '1.85'
   NODE_VERSION: '18'
   RELEASE_BUILD: ${{ github.event_name != 'workflow_dispatch' && 'true' || github.event.inputs.release_build }}
 
@@ -125,7 +125,7 @@ jobs:
           cache-dependency-path: yuque-tools-gui/package-lock.json
 
       - name: 设置 Rust
-        uses: dtolnay/rust-toolchain@1.75
+        uses: dtolnay/rust-toolchain@1.85
         with:
           targets: ${{ matrix.target }}
 
@@ -213,7 +213,7 @@ jobs:
           cache-dependency-path: yuque-tools-gui/package-lock.json
 
       - name: 设置 Rust
-        uses: dtolnay/rust-toolchain@1.75
+        uses: dtolnay/rust-toolchain@1.85
         with:
           targets: x86_64-pc-windows-msvc
 
@@ -245,6 +245,7 @@ jobs:
           echo "前端构建完成"
 
       - name: 构建 Tauri 应用
+        shell: bash
         run: |
           echo "构建 Tauri 应用 (Windows)..."
           cd yuque-tools-gui
@@ -258,6 +259,7 @@ jobs:
           echo "Tauri 应用构建完成"
 
       - name: 收集构建产物
+        shell: bash
         run: |
           echo "收集构建产物..."
           mkdir -p artifacts/windows
