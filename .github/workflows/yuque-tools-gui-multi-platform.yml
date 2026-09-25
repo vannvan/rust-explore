@@ -162,10 +162,10 @@ jobs:
           cd yuque-tools-gui
           if [ "${{ env.RELEASE_BUILD }}" = "true" ]; then
             echo "构建发布版本..."
-            npx --no-install tauri build --target ${{ matrix.target }} -- --release
+            npx --no-install tauri build --target ${{ matrix.target }}
           else
             echo "构建调试版本..."
-            npx --no-install tauri build --target ${{ matrix.target }}
+            npx --no-install tauri build --target ${{ matrix.target }} --debug
           fi
           echo "Tauri 应用构建完成"
 
@@ -250,10 +250,10 @@ jobs:
           cd yuque-tools-gui
           if [ "${{ env.RELEASE_BUILD }}" = "true" ]; then
             echo "构建发布版本..."
-            npx --no-install tauri build --target x86_64-pc-windows-msvc -- --release
+            npx --no-install tauri build --target x86_64-pc-windows-msvc
           else
             echo "构建调试版本..."
-            npx --no-install tauri build --target x86_64-pc-windows-msvc
+            npx --no-install tauri build --target x86_64-pc-windows-msvc --debug
           fi
           echo "Tauri 应用构建完成"
 
