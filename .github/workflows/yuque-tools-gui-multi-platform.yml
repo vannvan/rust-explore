@@ -302,19 +302,32 @@ jobs:
 
       - name: 创建发布包
         run: |
+          set -euo pipefail
           echo "创建多平台发布包..."
 
           # 创建发布目录
           mkdir -p release-package
 
-          # 复制所有平台的构建产物
-          for target in artifacts/*; do
-            if [ -d "$target" ]; then
-              target_name=$(basename "$target")
-              echo "处理目标: $target_name"
-              cp -r "$target"/* release-package/
+          # 为每个目标平台创建独立压缩包，避免不同平台产物互相覆盖
+          package_platform() {
+            local artifact_dir="$1"
+            local package_name="$2"
+
+            if [ ! -d "$artifact_dir" ]; then
+              echo "跳过未构建的平台: $package_name"
+              return 0
             fi
-          done
+
+            echo "打包: $package_name"
+            (
+              cd "$artifact_dir"
+              zip -r "../../release-package/${package_name}.zip" .
+            )
+          }
+
+          package_platform "artifacts/yuque-tools-gui-macos-x86_64-apple-darwin-${{ env.RELEASE_BUILD == 'true' && 'release' || 'debug' }}" "yuque-tools-gui-macos-intel"
+          package_platform "artifacts/yuque-tools-gui-macos-aarch64-apple-darwin-${{ env.RELEASE_BUILD == 'true' && 'release' || 'debug' }}" "yuque-tools-gui-macos-apple-silicon"
+          package_platform "artifacts/yuque-tools-gui-windows-${{ env.RELEASE_BUILD == 'true' && 'release' || 'debug' }}" "yuque-tools-gui-windows"
 
           # 创建版本信息文件
           cat > release-package/version-info.txt << EOF
@@ -332,8 +345,8 @@ jobs:
           ========
           EOF
 
-          # 列出所有构建产物
-          find release-package -type f -name "*.app" -o -name "*.dmg" -o -name "*.pkg" -o -name "*.exe" | sort >> release-package/version-info.txt
+          # 列出所有平台压缩包
+          find release-package -maxdepth 1 -type f -name "*.zip" -print | sort >> release-package/version-info.txt
 
           echo "发布包创建完成:"
           ls -la release-package/
@@ -353,7 +366,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.event.inputs.version_tag }}
-          name: 'Yuque Tools GUI ${{ github.event.inputs.version_tag }} - Multi-Platform'
+          name: 'yuque-tools-gui ${{ github.event.inputs.version_tag }}'
           body: |
             ## 多平台应用发布
 
@@ -369,7 +382,9 @@ jobs:
             ${{ github.event.inputs.target_platform == 'windows' && '- Windows (x86_64)' || '' }}
 
             ### 下载
-            请从构建产物中下载对应平台的应用文件。
+            - macOS Intel: `yuque-tools-gui-macos-intel.zip`
+            - macOS Apple Silicon: `yuque-tools-gui-macos-apple-silicon.zip`
+            - Windows: `yuque-tools-gui-windows.zip`
 
             ### 安装说明
 
@@ -392,9 +407,7 @@ jobs:
             *此版本由 GitHub Actions 自动构建*
 
           files: |
-            release-package/*.dmg
-            release-package/*.pkg
-            release-package/*.exe
+            release-package/*.zip
             release-package/version-info.txt
 
           draft: false
