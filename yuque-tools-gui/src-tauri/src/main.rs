@@ -189,6 +189,12 @@ async fn expand_window(window: tauri::Window) -> Result<(), String> {
         Err(e) => println!("Debug: 窗口可调整大小设置失败: {}", e),
     }
 
+    // 清除登录窗口遗留的最大尺寸限制，恢复主窗口自由缩放
+    match window.set_max_size::<tauri::Size>(None) {
+        Ok(_) => println!("Debug: 窗口最大尺寸限制已清除"),
+        Err(e) => println!("Debug: 清除窗口最大尺寸限制失败: {}", e),
+    }
+
     // 设置最小尺寸
     match window.set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize::new(
         800.0, 600.0,
@@ -203,10 +209,33 @@ async fn expand_window(window: tauri::Window) -> Result<(), String> {
         Err(e) => println!("Debug: 窗口标题更新失败: {}", e),
     }
 
-    // 窗口居中显示
-    match window.center() {
-        Ok(_) => println!("Debug: 窗口居中成功"),
-        Err(e) => println!("Debug: 窗口居中失败: {}", e),
+    // 使用主窗口最终物理尺寸重新计算位置，避免沿用登录窗口的位置
+    let monitor = window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| window.primary_monitor().ok().flatten());
+
+    match (monitor, window.outer_size()) {
+        (Some(monitor), Ok(window_size)) => {
+            let monitor_position = monitor.position();
+            let monitor_size = monitor.size();
+            let x =
+                monitor_position.x + ((monitor_size.width as i32 - window_size.width as i32) / 2);
+            let y =
+                monitor_position.y + ((monitor_size.height as i32 - window_size.height as i32) / 2);
+
+            match window.set_position(tauri::Position::Physical(tauri::PhysicalPosition::new(
+                x, y,
+            ))) {
+                Ok(_) => println!("Debug: 窗口已居中: ({}, {})", x, y),
+                Err(e) => println!("Debug: 窗口定位失败: {}", e),
+            }
+        }
+        _ => match window.center() {
+            Ok(_) => println!("Debug: 窗口居中成功（使用系统回退逻辑）"),
+            Err(e) => println!("Debug: 窗口居中失败: {}", e),
+        },
     }
 
     println!("Debug: 窗口展开完成");
