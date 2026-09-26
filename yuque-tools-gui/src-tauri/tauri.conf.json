@@ -22,7 +22,8 @@
         "icons/icon-32.png",
         "icons/icon-128.png",
         "icons/icon-256.png",
-        "icons/icon-512.png"
+        "icons/icon-512.png",
+        "icons/icon.ico"
       ],
       "resources": [],
       "externalBin": [],

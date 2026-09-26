@@ -159,6 +159,7 @@ jobs:
 
       - name: 构建 Tauri 应用
         run: |
+          set -euo pipefail
           echo "构建 Tauri 应用 (目标: ${{ matrix.target }})..."
           cd yuque-tools-gui
           if [ "${{ env.RELEASE_BUILD }}" = "true" ]; then
@@ -248,6 +249,7 @@ jobs:
       - name: 构建 Tauri 应用
         shell: bash
         run: |
+          set -euo pipefail
           echo "构建 Tauri 应用 (Windows)..."
           cd yuque-tools-gui
           if [ "${{ env.RELEASE_BUILD }}" = "true" ]; then
